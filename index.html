@@ -10,164 +10,142 @@
       padding: 0;
       overflow: hidden;
       background-color: #87CEEB;
-      touch-action: none; /* Mobilde kaydırmayı engeller */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
+
     canvas {
-      display: block;
       background-color: #87CEEB;
+      touch-action: none;
+    }
+
+    /* Tuşlar için stil */
+    .control-container {
+      position: absolute;
+      bottom: 20px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .control-button {
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 10px;
+      font-size: 18px;
+      user-select: none;
     }
   </style>
 </head>
 <body>
-  <!-- Görseller internetten alınacak -->
-  <img id="face1" src="https://i.hizliresim.com/r6bm8a9.png" style="display: none;">
-  <img id="face2" src="https://i.hizliresim.com/37shbzf.png" style="display: none;">
-  
   <canvas id="gameCanvas"></canvas>
+  <div class="control-container">
+    <div class="control-button" id="leftBtn">←</div>
+    <div class="control-button" id="rightBtn">→</div>
+    <div class="control-button" id="jumpBtn">↑</div>
+  </div>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    let gameWidth = window.innerWidth * 0.9;  // Ekranın %90'ı kadar genişlik
+    let gameHeight = window.innerHeight * 0.7; // Ekranın %70'i kadar yükseklik
+    canvas.width = gameWidth;
+    canvas.height = gameHeight;
 
-    // Canvas boyutlarını dinamik olarak ayarla
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);  // Ekran boyutu değiştiğinde tekrar ayarla
-
-    const face1 = document.getElementById("face1");
-    const face2 = document.getElementById("face2");
-
-    let score = 0;
-    let level = 1;
-    let levelTransition = false;
-    let loveMessage = "Aşkınız Başladı! <3";
-    let levelMessage = "Seviye Başlıyor!";
-    let loveMessageTimer = 0;
-    let levelMessageTimer = 0;
-    let transitionTimer = 0;
-    const offset = 60;
-    let lives = 3; // Başlangıçta 3 can
-    let invincibilityTime = 0; // Koruma süresi (invincibility) başlatılacak
-
-    let doubleJumpAvailable = true;
-
-    const character1 = {
-      x: 200, y: canvas.height - 200,
-      width: 40, height: 40,
-      velX: 0, velY: 0,
-      speed: 5,
-      jumping: false, grounded: false
+    // Dokunmatik tuşlar için başlangıç durumları
+    let keys = {
+      left: false,
+      right: false,
+      jump: false
     };
 
-    const character2 = {
-      x: character1.x + 40, y: character1.y, // Yalnızca 40 piksel sağa kaydırdık, bitişik olacak
-      width: 40, height: 40
-    };
-
+    // Karakterin ve platformların tanımları
+    const character1 = { x: 200, y: gameHeight - 100, width: 40, height: 40, velX: 0, velY: 0, speed: 5, grounded: false };
     const gravity = 0.5;
     const friction = 0.8;
     const jumpStrength = 14;
+    const platforms = [{ x: 0, y: gameHeight - 50, width: gameWidth, height: 50 }];
+    
+    let hearts = [{ x: 300, y: gameHeight - 100, collected: false }];
+    let obstacles = [{ x: 500, y: gameHeight - 120, width: 30, height: 30 }];
 
-    let platforms = [];
-    let hearts = [];
-    let obstacles = [];
+    // Tuş kontrol işlevleri
+    document.getElementById("leftBtn").addEventListener("touchstart", () => keys.left = true);
+    document.getElementById("rightBtn").addEventListener("touchstart", () => keys.right = true);
+    document.getElementById("jumpBtn").addEventListener("touchstart", () => keys.jump = true);
 
-    // Kontrol tuşları için mobilde kullanılacak dokunmatik olayları
-    let touchStartX = 0;
-    let touchStartY = 0;
+    document.getElementById("leftBtn").addEventListener("touchend", () => keys.left = false);
+    document.getElementById("rightBtn").addEventListener("touchend", () => keys.right = false);
+    document.getElementById("jumpBtn").addEventListener("touchend", () => keys.jump = false);
 
-    canvas.addEventListener("touchstart", function (e) {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    });
-
-    canvas.addEventListener("touchmove", function (e) {
-      const touchMoveX = e.touches[0].clientX;
-      const touchMoveY = e.touches[0].clientY;
-
-      if (touchMoveX < touchStartX - 20) {
-        keys["a"] = true;  // Sol hareket
-        keys["d"] = false;
-      } else if (touchMoveX > touchStartX + 20) {
-        keys["d"] = true;  // Sağ hareket
-        keys["a"] = false;
-      }
-
-      if (touchMoveY < touchStartY - 20 && character1.grounded) {
-        keys["w"] = true;  // Zıplama
-      } else {
-        keys["w"] = false;
-      }
-    });
-
-    canvas.addEventListener("touchend", function (e) {
-      keys["a"] = false;
-      keys["d"] = false;
-      keys["w"] = false;
-    });
-
-    // Diğer fonksiyonlarınız burada...
-
-    function updateCharacters() {
+    // Karakteri güncelle
+    function updateCharacter() {
       character1.velY += gravity;
 
-      if ((keys["a"] || keys["ArrowLeft"])) character1.velX -= 0.5;
-      if ((keys["d"] || keys["ArrowRight"])) character1.velX += 0.5;
-
-      if ((keys["w"] || keys["ArrowUp"] || keys[" "])) {
-        if (character1.grounded) {
-          character1.jumping = true;
-          character1.grounded = false;
-          character1.velY = -jumpStrength;
-          doubleJumpAvailable = true;
-        } else if (doubleJumpAvailable) {
-          character1.velY = -jumpStrength;
-          doubleJumpAvailable = false;
-        }
+      if (keys.left) character1.velX = -character1.speed;
+      if (keys.right) character1.velX = character1.speed;
+      if (keys.jump && character1.grounded) {
+        character1.velY = -jumpStrength;
+        character1.grounded = false;
       }
 
       character1.velX *= friction;
       character1.x += character1.velX;
       character1.y += character1.velY;
 
+      // Karakterin platformlarla çarpışma kontrolü
       character1.grounded = false;
-      for (let p of platforms) {
-        if (
-          character1.x + character1.width > p.x &&
-          character1.x < p.x + p.width &&
-          character1.y + character1.height > p.y &&
-          character1.y + character1.height < p.y + p.height + character1.velY
-        ) {
+      platforms.forEach(p => {
+        if (character1.x + character1.width > p.x && character1.x < p.x + p.width &&
+            character1.y + character1.height > p.y && character1.y + character1.height < p.y + p.height + character1.velY) {
           character1.y = p.y - character1.height;
           character1.velY = 0;
           character1.grounded = true;
-          character1.jumping = false;
-          doubleJumpAvailable = true;
         }
-      }
-
+      });
+      
+      // Ekranın dışına çıkma
       if (character1.x < 0) character1.x = 0;
-      if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
-      if (character1.y + character1.height > canvas.height) {
-        character1.y = canvas.height - character1.height;
+      if (character1.x + character1.width > gameWidth) character1.x = gameWidth - character1.width;
+      if (character1.y + character1.height > gameHeight) {
+        character1.y = gameHeight - character1.height;
         character1.grounded = true;
-        character1.jumping = false;
         character1.velY = 0;
-        doubleJumpAvailable = true;
       }
-
-      character2.x = character1.x + character1.width; // Karakterler bitişik olmalı
-      character2.y = character1.y;
     }
 
-    // Diğer oyun fonksiyonlarınız ve oyun döngüsü...
+    // Oyun döngüsünü çiz
+    function draw() {
+      ctx.clearRect(0, 0, gameWidth, gameHeight);
+
+      ctx.fillStyle = "green";
+      platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+
+      hearts.forEach(h => {
+        if (!h.collected) {
+          ctx.fillStyle = "red";
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, 15, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      obstacles.forEach(o => {
+        ctx.fillStyle = "black";
+        ctx.fillRect(o.x, o.y, o.width, o.height);
+      });
+
+      ctx.fillStyle = "blue";
+      ctx.fillRect(character1.x, character1.y, character1.width, character1.height);
+    }
 
     function gameLoop() {
-      updateCharacters();
-      // Diğer oyun işlemleri...
+      updateCharacter();
       draw();
       requestAnimationFrame(gameLoop);
     }
