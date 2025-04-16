@@ -112,10 +112,10 @@
     function updateCharacters() {
       character1.velY += gravity;
 
-      if ((keys["a"] || keys["ArrowLeft"])) character1.velX -= 0.5;
-      if ((keys["d"] || keys["ArrowRight"])) character1.velX += 0.5;
+      if ((keys["ArrowLeft"])) character1.velX -= 0.5;
+      if ((keys["ArrowRight"])) character1.velX += 0.5;
 
-      if ((keys["w"] || keys["ArrowUp"] || keys[" "])) {
+      if ((keys["ArrowUp"] || keys[" "])) {
         if (character1.grounded) {
           character1.jumping = true;
           character1.grounded = false;
