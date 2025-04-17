@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
   <title>Kalp Toplama Oyunu</title>
   <style>
     body, canvas {
@@ -157,6 +156,28 @@
 
       character2.x = character1.x + character1.width;
       character2.y = character1.y;
+
+      // Kalpleri toplama ve hareket etme
+      hearts.forEach(heart => {
+        if (!heart.collected && character1.x + character1.width > heart.x && character1.x < heart.x + 20 && 
+            character1.y + character1.height > heart.y && character1.y < heart.y + 20) {
+          heart.collected = true;
+          score += (heart.type === 'strong') ? 2 : 1; // Güçlü kalp 2 puan verir
+        }
+      });
+
+      // Platformları hareket ettir
+      platforms.forEach(p => {
+        p.y += character1.velY; // Bu, platformların yukarı hareket etmesini sağlar.
+      });
+
+      // Ekranın dışında kalan platformları yeniden oluştur
+      platforms = platforms.filter(p => p.y < canvas.height);
+
+      // Yeni platformlar ekle
+      if (platforms.length < 6) {
+        createLevel();
+      }
     }
 
     function drawHeart(x, y, type) {
