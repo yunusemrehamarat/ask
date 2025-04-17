@@ -5,9 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Kalp Toplama Oyunu</title>
   <style>
-    body, canvas { margin: 0; padding: 0; overflow: hidden; background-color: #87CEEB; display: block; }
+    body, canvas { 
+      margin: 0; padding: 0; 
+      overflow: hidden; background-color: #87CEEB; 
+      display: block;
+      width: 100%; height: 100%; 
+    }
+    canvas {
+      display: block;
+    }
     #leftButton, #rightButton {
-      position: absolute; bottom: 20px; padding: 15px; background-color: rgba(0, 0, 0, 0.5); color: white;
+      position: absolute; bottom: 20px; padding: 15px; 
+      background-color: rgba(0, 0, 0, 0.5); color: white;
       font-size: 24px; border-radius: 50%; cursor: pointer;
     }
     #leftButton { left: 20px; } #rightButton { right: 20px; }
@@ -29,9 +38,13 @@
     const gravity = 0.5, jumpStrength = 14;
     let platforms = [], hearts = [], obstacles = [];
 
-    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    // Ekran boyutunu ayarlamak için
+    function resizeCanvas() { 
+      canvas.width = window.innerWidth; 
+      canvas.height = window.innerHeight; 
+    }
     window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+    resizeCanvas(); // Sayfa yüklendiğinde ekranı uygun şekilde ayarla
 
     function createLevel() {
       const baseY = canvas.height - 100;
