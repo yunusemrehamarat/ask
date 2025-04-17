@@ -1,10 +1,9 @@
-<!-- Bu HTML dosyasına yapıştır -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Kalp Toplama (Yukarı Çık)</title>
+  <title>Kalp Toplama Yukarı</title>
   <style>
     body, canvas {
       margin: 0; padding: 0;
@@ -36,54 +35,75 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-let score = 0, timeLeft = 60;
+let score = 0, timeLeft = 60, scrollSpeed = 2;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const character = { x: canvas.width/2 - 20, y: canvas.height - 100, width: 40, height: 40, velX: 0, velY: -2, speed: 5 };
+// Karakter sabit bir yerde durur (alt ortada)
+const character = {
+  x: canvas.width / 2 - 20,
+  y: canvas.height / 2,
+  width: 40,
+  height: 40,
+  velX: 0,
+  speed: 5
+};
+
 const hearts = [];
 const platforms = [];
 
-for (let i = 0; i < 10; i++) {
-  platforms.push({ x: Math.random() * canvas.width, y: i * 150, width: 100, height: 10 });
-  hearts.push({ x: Math.random() * canvas.width, y: i * 150 - 50, collected: false });
+for (let i = 0; i < 12; i++) {
+  let platformY = canvas.height - i * 150;
+  platforms.push({
+    x: Math.random() * (canvas.width - 100),
+    y: platformY,
+    width: 100,
+    height: 10
+  });
+
+  hearts.push({
+    x: Math.random() * (canvas.width - 30),
+    y: platformY - 40,
+    collected: false
+  });
 }
 
 function update() {
-  character.y += character.velY;
-  character.x += character.velX;
+  // Platformlar ve kalpler aşağı kayıyor
+  platforms.forEach(p => p.y += scrollSpeed);
+  hearts.forEach(h => h.y += scrollSpeed);
 
-  // Platformlar ve kalpler aşağı kayar
-  platforms.forEach(p => p.y += 2);
-  hearts.forEach(h => h.y += 2);
-
-  // Ekrandan çıkanlar yenilenir
+  // Yeniden döngüye sok
   platforms.forEach((p, i) => {
     if (p.y > canvas.height) {
       p.y = -10;
-      p.x = Math.random() * canvas.width;
-      hearts[i] = { x: p.x + 30, y: p.y - 40, collected: false };
+      p.x = Math.random() * (canvas.width - 100);
+      hearts[i] = {
+        x: p.x + 30,
+        y: p.y - 40,
+        collected: false
+      };
     }
   });
 
-  // Kalp toplama
+  // Karakter hareketi
+  character.x += character.velX;
+
+  // Kenar sınırlaması
+  if (character.x < 0) character.x = 0;
+  if (character.x + character.width > canvas.width) character.x = canvas.width - character.width;
+
+  // Kalp toplama kontrolü
   hearts.forEach(h => {
-    if (!h.collected && character.x < h.x + 20 && character.x + character.width > h.x &&
-        character.y < h.y + 20 && character.y + character.height > h.y) {
+    if (!h.collected &&
+        character.x < h.x + 20 &&
+        character.x + character.width > h.x &&
+        character.y < h.y + 20 &&
+        character.y + character.height > h.y) {
       h.collected = true;
       score++;
     }
   });
-
-  // Duvar çarpması
-  if (character.x < 0) character.x = 0;
-  if (character.x + character.width > canvas.width) character.x = canvas.width - character.width;
-
-  // Aşağı düşerse oyun biter
-  if (character.y > canvas.height) {
-    alert("Oyun Bitti! Skor: " + score);
-    location.reload();
-  }
 }
 
 function draw() {
@@ -121,6 +141,7 @@ function gameLoop() {
 }
 gameLoop();
 
+// Sayaç
 setInterval(() => {
   timeLeft--;
   if (timeLeft <= 0) {
@@ -129,7 +150,7 @@ setInterval(() => {
   }
 }, 1000);
 
-// Mobil kontrol
+// Dokunmatik kontroller
 document.getElementById("leftButton").addEventListener("touchstart", () => character.velX = -character.speed);
 document.getElementById("rightButton").addEventListener("touchstart", () => character.velX = character.speed);
 document.getElementById("leftButton").addEventListener("touchend", () => character.velX = 0);
