@@ -14,11 +14,26 @@
     canvas {
       display: block;
     }
-    /* Zıplama Butonu */
-    #jumpButton {
-      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-      padding: 15px 30px; background-color: rgba(0, 0, 0, 0.5); color: white;
-      font-size: 24px; border-radius: 20px; cursor: pointer;
+
+    /* Butonlar için Flex container */
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: space-between;
+      width: 300px; /* Butonlar arasındaki boşluk */
+    }
+
+    /* Buton stilini ayarlıyoruz */
+    .control-btn {
+      padding: 15px 30px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 24px;
+      border-radius: 20px;
+      cursor: pointer;
       user-select: none;
     }
   </style>
@@ -29,8 +44,12 @@
   
   <canvas id="gameCanvas"></canvas>
   
-  <!-- Zıplama Butonu -->
-  <div id="jumpButton">Zıpla</div>
+  <!-- Kontrol Butonları: Sağ, Sol, Zıplama -->
+  <div id="controls">
+    <div class="control-btn" id="leftBtn">Sol</div>
+    <div class="control-btn" id="jumpBtn">Zıpla</div>
+    <div class="control-btn" id="rightBtn">Sağ</div>
+  </div>
 
   <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
@@ -96,8 +115,14 @@
       }
     });
 
-    // Zıplama Butonu İşlevi
-    document.getElementById("jumpButton").addEventListener("click", () => {
+    // Kontroller Butonları
+    document.getElementById("leftBtn").addEventListener("click", () => {
+      character1.velX = -character1.speed; // Sol hareket
+    });
+    document.getElementById("rightBtn").addEventListener("click", () => {
+      character1.velX = character1.speed; // Sağ hareket
+    });
+    document.getElementById("jumpBtn").addEventListener("click", () => {
       if (character1.grounded || doubleJumpAvailable) {
         character1.velY = -jumpStrength;
         character1.grounded = false;
@@ -108,8 +133,6 @@
 
     function updateCharacters() {
       character1.velY += gravity;
-      if (keys["a"] || keys["ArrowLeft"]) character1.velX -= 0.5;
-      if (keys["d"] || keys["ArrowRight"]) character1.velX += 0.5;
       character1.velX *= 0.8;
       character1.x += character1.velX; character1.y += character1.velY;
 
@@ -141,7 +164,12 @@
       ctx.fillStyle = "black"; ctx.font = "24px Arial"; ctx.fillText(`Skor: ${score}`, 30, 30); ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
-    function gameLoop() { updateCharacters(); draw(); requestAnimationFrame(gameLoop); }
+    function gameLoop() { 
+      updateCharacters();
+      draw(); 
+      requestAnimationFrame(gameLoop); 
+    }
+
     gameLoop();
   </script>
 </body>
