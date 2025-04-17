@@ -15,16 +15,16 @@
     }
     canvas {
       display: block;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
     }
-    /* Butonlar için stil */
+    /* Buton için stil */
     #jumpButton {
       position: absolute;
-      bottom: 50px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      padding: 20px;
+      padding: 15px;
       background-color: rgba(0, 0, 0, 0.5);
       color: white;
       font-size: 30px;
@@ -49,11 +49,12 @@
     let lives = 3;
     let gravity = 0.5;
     let jumpStrength = 12;
+    let offsetY = 0; // Ekran kayma miktarı
 
     // Karakter özellikleri
     const character1 = {
       x: canvas.width / 2 - 60,
-      y: canvas.height - 150,
+      y: canvas.height - 150 - offsetY,
       width: 40,
       height: 40,
       velX: 0,
@@ -64,7 +65,7 @@
 
     const character2 = {
       x: canvas.width / 2 + 20,
-      y: canvas.height - 150,
+      y: canvas.height - 150 - offsetY,
       width: 40,
       height: 40,
       velX: 0,
@@ -130,7 +131,7 @@
     function drawPlatforms() {
       platforms.forEach((platform) => {
         ctx.fillStyle = "green";
-        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+        ctx.fillRect(platform.x, platform.y - offsetY, platform.width, platform.height);
       });
     }
 
@@ -139,11 +140,11 @@
         if (!heart.collected) {
           ctx.fillStyle = "red";
           ctx.beginPath();
-          ctx.moveTo(heart.x, heart.y);
-          ctx.bezierCurveTo(heart.x, heart.y - 10, heart.x - 10, heart.y - 10, heart.x - 10, heart.y + 5);
-          ctx.bezierCurveTo(heart.x - 10, heart.y + 15, heart.x, heart.y + 20, heart.x, heart.y + 25);
-          ctx.bezierCurveTo(heart.x, heart.y + 20, heart.x + 10, heart.y + 15, heart.x + 10, heart.y + 5);
-          ctx.bezierCurveTo(heart.x + 10, heart.y - 10, heart.x, heart.y - 10, heart.x, heart.y);
+          ctx.moveTo(heart.x, heart.y - offsetY);
+          ctx.bezierCurveTo(heart.x, heart.y - 10 - offsetY, heart.x - 10, heart.y - 10 - offsetY, heart.x - 10, heart.y + 5 - offsetY);
+          ctx.bezierCurveTo(heart.x - 10, heart.y + 15 - offsetY, heart.x, heart.y + 20 - offsetY, heart.x, heart.y + 25 - offsetY);
+          ctx.bezierCurveTo(heart.x, heart.y + 20 - offsetY, heart.x + 10, heart.y + 15 - offsetY, heart.x + 10, heart.y + 5 - offsetY);
+          ctx.bezierCurveTo(heart.x + 10, heart.y - 10 - offsetY, heart.x, heart.y - 10 - offsetY, heart.x, heart.y - offsetY);
           ctx.fill();
         }
       });
@@ -152,15 +153,15 @@
     // Karakterleri çizme
     function drawCharacter() {
       ctx.fillStyle = "blue";
-      ctx.fillRect(character1.x, character1.y, character1.width, character1.height);
-      ctx.fillRect(character2.x, character2.y, character2.width, character2.height);
+      ctx.fillRect(character1.x, character1.y - offsetY, character1.width, character1.height);
+      ctx.fillRect(character2.x, character2.y - offsetY, character2.width, character2.height);
 
       // Yüzleri çizme
       const face1 = document.getElementById("face1");
       const face2 = document.getElementById("face2");
 
-      ctx.drawImage(face1, character1.x, character1.y - 20, character1.width, character1.height);
-      ctx.drawImage(face2, character2.x, character2.y - 20, character2.width, character2.height);
+      ctx.drawImage(face1, character1.x, character1.y - offsetY - 20, character1.width, character1.height);
+      ctx.drawImage(face2, character2.x, character2.y - offsetY - 20, character2.width, character2.height);
     }
 
     // Yükseklik sınırı ve yerçekimi
@@ -244,11 +245,17 @@
       ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
+    // Ekran kaydırma işlemi
+    function moveScreenUp() {
+      offsetY += 2;
+    }
+
     // Oyun döngüsü
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       updateCharacter();
       movePlatforms();
+      moveScreenUp();
       drawCharacter();
       drawPlatforms();
       drawHearts();
