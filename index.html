@@ -64,27 +64,30 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas(); // Sayfa yüklendiğinde ekranı uygun şekilde ayarla
 
+    // Platformlar ve kalplerin dinamik olarak yerleştirilmesi
     function createLevel() {
       const baseY = canvas.height - 100;
       platforms = [];
       hearts = [];
       obstacles = [];
       
+      // Platformlar için konumları ekran genişliğine göre oranlıyoruz
       const platformData = [
         { x: 0, y: baseY, width: canvas.width, height: 100 },
-        { x: 200, y: baseY - 100, width: 150, height: 20 },
-        { x: 400, y: baseY - 180, width: 150, height: 20 },
-        { x: 650, y: baseY - 250, width: 150, height: 20 },
-        { x: 900, y: baseY - 180, width: 150, height: 20 },
-        { x: 1150, y: baseY - 100, width: 150, height: 20 }
+        { x: 0.2 * canvas.width, y: baseY - 100, width: 0.15 * canvas.width, height: 20 },
+        { x: 0.4 * canvas.width, y: baseY - 180, width: 0.15 * canvas.width, height: 20 },
+        { x: 0.6 * canvas.width, y: baseY - 250, width: 0.15 * canvas.width, height: 20 },
+        { x: 0.8 * canvas.width, y: baseY - 180, width: 0.15 * canvas.width, height: 20 },
+        { x: 1.0 * canvas.width, y: baseY - 100, width: 0.15 * canvas.width, height: 20 }
       ];
 
+      // Kalp verilerini de ekran genişliğine göre konumlandırıyoruz
       const heartData = [
-        { x: 240, y: baseY - 140, collected: false, type: 'normal' },
-        { x: 460, y: baseY - 220, collected: false, type: 'strong' },
-        { x: 720, y: baseY - 290, collected: false, type: 'normal' },
-        { x: 980, y: baseY - 220, collected: false, type: 'normal' },
-        { x: 1240, y: baseY - 140, collected: false, type: 'strong' }
+        { x: 0.2 * canvas.width, y: baseY - 140, collected: false, type: 'normal' },
+        { x: 0.4 * canvas.width, y: baseY - 220, collected: false, type: 'strong' },
+        { x: 0.6 * canvas.width, y: baseY - 290, collected: false, type: 'normal' },
+        { x: 0.8 * canvas.width, y: baseY - 220, collected: false, type: 'normal' },
+        { x: 1.0 * canvas.width, y: baseY - 140, collected: false, type: 'strong' }
       ];
 
       platforms.push(...platformData);
