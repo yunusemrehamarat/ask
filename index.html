@@ -17,16 +17,18 @@
     canvas {
       display: block;
     }
-    /* Butonlar için stil */
     #leftButton, #rightButton, #jumpButton {
       position: absolute;
       bottom: 20px;
-      padding: 15px;
+      width: 60px; height: 60px;
+      text-align: center;
+      line-height: 60px;
       background-color: rgba(0, 0, 0, 0.5);
       color: white;
-      font-size: 24px;
+      font-size: 28px;
       border-radius: 50%;
       cursor: pointer;
+      user-select: none;
     }
     #leftButton { left: 20px; }
     #rightButton { right: 20px; }
@@ -38,27 +40,25 @@
   <img id="face2" src="https://i.hizliresim.com/37shbzf.png" style="display: none;">
   
   <canvas id="gameCanvas"></canvas>
-  <!-- Butonlar -->
   <div id="leftButton">←</div>
   <div id="rightButton">→</div>
   <div id="jumpButton">↑</div>
 
   <script>
-    const canvas = document.getElementById("gameCanvas"),   ctx = canvas.getContext("2d");
-    let score = 0, level = 1, lives = 3, doubleJumpAvailable = true, loveMessageTimer = 0, levelMessageTimer = 0;
+    const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
+    let score = 0, level = 1, lives = 3, doubleJumpAvailable = true, gameOver = false;
 
     const character1 = { x: 200, y: canvas.height - 200, width: 40, height: 40, velX: 0, velY: 0, speed: 5, jumping: false, grounded: false };
     const character2 = { x: character1.x + 40, y: character1.y, width: 40, height: 40 };
     const gravity = 0.5, jumpStrength = 14;
     let platforms = [], hearts = [], obstacles = [];
 
-    // Ekran boyutunu ayarlamak için
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
     window.addEventListener("resize", resizeCanvas);
-    resizeCanvas(); // Sayfa yüklendiğinde ekranı uygun şekilde ayarla
+    resizeCanvas();
 
     function createLevel() {
       const baseY = canvas.height - 100;
@@ -89,6 +89,12 @@
       for (let i = 0; i < 6; i++) {
         obstacles.push({ x: Math.random() * (canvas.width - 30), y: Math.random() * (canvas.height - 200), width: 30, height: 30 });
       }
+
+      // Reset karakter
+      character1.x = 200;
+      character1.y = canvas.height - 200;
+      character1.velX = 0;
+      character1.velY = 0;
     }
 
     createLevel();
@@ -102,7 +108,9 @@
     canvas.addEventListener("touchmove", e => { touchEnd = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
     canvas.addEventListener("touchend", () => {
       if (touchEnd.y - touchStart.y > 30 && (character1.grounded || doubleJumpAvailable)) {
-        character1.velY = -jumpStrength; character1.grounded = false; character1.jumping = true;
+        character1.velY = -jumpStrength;
+        character1.grounded = false;
+        character1.jumping = true;
         doubleJumpAvailable = character1.grounded ? true : false;
       }
     });
@@ -111,38 +119,71 @@
     document.getElementById("rightButton").addEventListener("touchstart", () => character1.velX = character1.speed);
     document.getElementById("jumpButton").addEventListener("touchstart", () => {
       if (character1.grounded || doubleJumpAvailable) {
-        character1.velY = -jumpStrength; character1.grounded = false; character1.jumping = true;
+        character1.velY = -jumpStrength;
+        character1.grounded = false;
+        character1.jumping = true;
         doubleJumpAvailable = character1.grounded ? true : false;
       }
     });
 
     document.getElementById("leftButton").addEventListener("touchend", () => character1.velX = 0);
     document.getElementById("rightButton").addEventListener("touchend", () => character1.velX = 0);
-    document.getElementById("jumpButton").addEventListener("touchend", () => {});
 
     function updateCharacters() {
-      character1.velY += gravity;
+      if (gameOver) return;
 
+      character1.velY += gravity;
       if (keys["a"] || keys["ArrowLeft"]) character1.velX -= 0.5;
       if (keys["d"] || keys["ArrowRight"]) character1.velX += 0.5;
       character1.velX *= 0.8;
       character1.x += character1.velX; 
       character1.y += character1.velY;
+      character1.grounded = false;
 
-      character1.grounded = false; // Reset grounded to false each frame
-
-      // Check for collisions with platforms and hearts
       platforms.forEach(p => {
         if (character1.x + character1.width > p.x && character1.x < p.x + p.width &&
             character1.y + character1.height <= p.y && character1.y + character1.height + character1.velY >= p.y) {
-          // Collides with platform, landing on it
-          character1.y = p.y - character1.height;  // Move the character to the platform
-          character1.velY = 0;  // Stop vertical movement
-          character1.grounded = true; // Set the grounded flag to true
+          character1.y = p.y - character1.height;
+          character1.velY = 0;
+          character1.grounded = true;
         }
       });
 
-      // Handle character boundaries
+      // Kalp toplama
+      hearts.forEach(h => {
+        if (!h.collected &&
+            character1.x < h.x + 20 &&
+            character1.x + character1.width > h.x &&
+            character1.y < h.y + 25 &&
+            character1.y + character1.height > h.y) {
+          h.collected = true;
+          score += h.type === 'strong' ? 2 : 1;
+        }
+      });
+
+      // Engel çarpışması
+      obstacles.forEach(o => {
+        if (character1.x < o.x + o.width &&
+            character1.x + character1.width > o.x &&
+            character1.y < o.y + o.height &&
+            character1.y + character1.height > o.y) {
+          lives--;
+          character1.x = 200;
+          character1.y = canvas.height - 200;
+          character1.velY = 0;
+          if (lives <= 0) {
+            gameOver = true;
+            setTimeout(() => {
+              alert("Oyun Bitti! Skor: " + score);
+              score = 0;
+              lives = 3;
+              gameOver = false;
+              createLevel();
+            }, 100);
+          }
+        }
+      });
+
       if (character1.x < 0) character1.x = 0;
       if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
       if (character1.y + character1.height > canvas.height) {
@@ -153,16 +194,6 @@
 
       character2.x = character1.x + character1.width;
       character2.y = character1.y;
-      hearts.forEach(h => {
-      if (!h.collected &&
-        character1.x < h.x + 20 &&
-        character1.x + character1.width > h.x &&
-        character1.y < h.y + 25 &&
-        character1.y + character1.height > h.y) {
-        h.collected = true;
-        score += h.type === 'strong' ? 2 : 1;
-  }
-});
     }
 
     function drawHeart(x, y, type) {
@@ -178,7 +209,7 @@
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+      platforms.forEach(p => { ctx.fillStyle = "#654321"; ctx.fillRect(p.x, p.y, p.width, p.height); });
       hearts.forEach(h => { if (!h.collected) drawHeart(h.x, h.y, h.type); });
       obstacles.forEach(o => { ctx.fillStyle = "black"; ctx.fillRect(o.x, o.y, o.width, o.height); });
       ctx.drawImage(face1, character1.x, character1.y - 10, character1.width, character1.height);
@@ -189,7 +220,11 @@
       ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
-    function gameLoop() { updateCharacters(); draw(); requestAnimationFrame(gameLoop); }
+    function gameLoop() {
+      updateCharacters();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
     gameLoop();
   </script>
 </body>
