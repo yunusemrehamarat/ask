@@ -23,19 +23,38 @@
       transform: translateX(-50%);
       display: flex;
       justify-content: space-between;
-      width: 300px; /* Butonlar arasındaki boşluk */
+      width: 250px; /* Butonlar arasındaki boşluk */
     }
 
     /* Buton stilini ayarlıyoruz */
     .control-btn {
-      padding: 15px 30px;
+      padding: 15px 25px;
       background-color: rgba(0, 0, 0, 0.5);
       color: white;
-      font-size: 24px;
+      font-size: 18px;
       border-radius: 20px;
       cursor: pointer;
       user-select: none;
+      text-align: center;
+      min-width: 60px;
     }
+
+    .control-btn:hover {
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    /* Ekrandaki yazı için stil */
+    #gameText {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: black;
+      font-size: 30px;
+      text-align: center;
+      display: none; /* Başlangıçta gizli */
+    }
+
   </style>
 </head>
 <body>
@@ -50,6 +69,9 @@
     <div class="control-btn" id="jumpBtn">Zıpla</div>
     <div class="control-btn" id="rightBtn">Sağ</div>
   </div>
+
+  <!-- Zıplama Mesajı -->
+  <div id="gameText">Zıplama!</div>
 
   <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
@@ -128,6 +150,11 @@
         character1.grounded = false;
         character1.jumping = true;
         doubleJumpAvailable = character1.grounded ? true : false;
+        
+        // Zıplama mesajını göster
+        const gameText = document.getElementById("gameText");
+        gameText.style.display = "block";
+        setTimeout(() => { gameText.style.display = "none"; }, 1000); // Mesajı 1 saniye sonra gizle
       }
     });
 
@@ -157,17 +184,16 @@
       platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
       hearts.forEach(h => { if (!h.collected) drawHeart(h.x, h.y, h.type); });
       obstacles.forEach(o => { ctx.fillStyle = "black"; ctx.fillRect(o.x, o.y, o.width, o.height); });
-
       ctx.drawImage(face1, character1.x, character1.y - 10, character1.width, character1.height);
       ctx.drawImage(face2, character2.x, character2.y - 10, character2.width, character2.height);
-
-      ctx.fillStyle = "black"; ctx.font = "24px Arial"; ctx.fillText(`Skor: ${score}`, 30, 30); ctx.fillText(`Canlar: ${lives}`, 30, 60);
+      ctx.fillStyle = "black";
+      ctx.font = "24px Arial";
+      ctx.fillText(`Skor: ${score}`, 30, 30);
+      ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
     function gameLoop() { 
-      updateCharacters();
-      draw(); 
-      requestAnimationFrame(gameLoop); 
+      updateCharacters(); draw(); requestAnimationFrame(gameLoop); 
     }
 
     gameLoop();
