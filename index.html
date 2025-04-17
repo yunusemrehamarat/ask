@@ -42,7 +42,7 @@
     
     .game-info {
       position: absolute;
-      top: 15%;
+      bottom: 15%;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -359,128 +359,68 @@
             char.y < hearts[i].y + hearts[i].size &&
             char.y + char.height > hearts[i].y
           ) {
+            score++;
+            scoreEl.textContent = score;
+            hearts.splice(i, 1);
             collected = true;
           }
         });
         
-        if (collected) {
-          hearts.splice(i, 1);
-          score++;
-          scoreEl.textContent = score;
-          continue;
-        }
-        
-        // Ekran dışına çıkan kalpleri kaldır
-        if (hearts[i].y > screenHeight) {
-          hearts.splice(i, 1);
-        }
+        // Kalp ekrandan çıkarsa
+        if (hearts[i] && hearts[i].y > screenHeight) hearts.splice(i, 1);
       }
       
-      // Zamanı güncelle
+      // Oyun süresi bitiyor mu?
       gameTime -= deltaTime / 1000;
-      timerEl.textContent = Math.ceil(gameTime);
-      
-      // Oyun bitiş kontrolü
       if (gameTime <= 0) {
-        endGame();
+        gameActive = false;
+        cancelAnimationFrame(gameLoopId);
+        gameOver();
       }
+      timerEl.textContent = Math.max(0, Math.floor(gameTime));
     }
     
-    function createHeart() {
-      const size = Math.min(40, screenWidth * 0.1);
-      hearts.push({
-        x: Math.random() * (screenWidth - size),
-        y: -size,
-        size: size,
-        speed: 3 + Math.random() * 2
-      });
+    function gameLoop(timestamp) {
+      const deltaTime = timestamp - lastTime;
+      lastTime = timestamp;
+      
+      update(deltaTime);
+      render();
+      
+      gameLoopId = requestAnimationFrame(gameLoop);
     }
     
-    function drawHeart(x, y, size) {
-      ctx.save();
-      ctx.fillStyle = '#ff0000'; // Kırmızı renk
-      
-      // Kalp şekli çizimi
-      const topCurveHeight = size * 0.3;
-      ctx.beginPath();
-      ctx.moveTo(x, y + size/4);
-      
-      // Sol üst eğri
-      ctx.bezierCurveTo(
-        x, y, 
-        x - size/2, y, 
-        x - size/2, y + size/4
-      );
-      
-      // Sol alt eğri
-      ctx.bezierCurveTo(
-        x - size/2, y + size/2, 
-        x, y + size*0.75, 
-        x, y + size
-      );
-      
-      // Sağ alt eğri
-      ctx.bezierCurveTo(
-        x, y + size*0.75, 
-        x + size/2, y + size/2, 
-        x + size/2, y + size/4
-      );
-      
-      // Sağ üst eğri
-      ctx.bezierCurveTo(
-        x + size/2, y, 
-        x, y, 
-        x, y + size/4
-      );
-      
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-    
-    function draw() {
-      // Canvas'ı temizle ve ölçeklendir
-      ctx.save();
-      ctx.scale(pixelRatio, pixelRatio);
-      ctx.clearRect(0, 0, screenWidth, screenHeight);
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       // Karakterleri çiz
       characters.forEach(char => {
         ctx.drawImage(char.image, char.x, char.y, char.width, char.height);
       });
       
-      // Kalpleri çiz (kırmızı ve kalp şeklinde)
+      // Kalpleri çiz
       hearts.forEach(heart => {
-        drawHeart(heart.x + heart.size/2, heart.y, heart.size);
+        ctx.beginPath();
+        ctx.arc(heart.x, heart.y, heart.size, 0, Math.PI * 2);
+        ctx.fillStyle = "#FF6347";
+        ctx.fill();
+        ctx.closePath();
       });
-      
-      ctx.restore();
     }
     
-    function endGame() {
-      gameActive = false;
-      finalScoreEl.textContent = `Skor: ${score}`;
+    function createHeart() {
+      const size = Math.random() * 20 + 15; // 15-35 arası
+      const x = Math.random() * (screenWidth - size);
+      const speed = Math.random() * 1.5 + 1; // 1-2.5 arası
+      hearts.push({ x, y: -size, size, speed });
+    }
+    
+    function gameOver() {
       gameOverEl.style.display = 'flex';
-      cancelAnimationFrame(gameLoopId);
+      finalScoreEl.textContent = `Skor: ${score}`;
     }
     
-    function gameLoop(currentTime) {
-      const deltaTime = currentTime - lastTime;
-      lastTime = currentTime;
-      
-      update(deltaTime);
-      draw();
-      
-      gameLoopId = requestAnimationFrame(gameLoop);
-    }
-    
-    // Yeniden başlat butonu
     restartBtn.addEventListener('click', initGame);
-    
-    // Sayfa kapatılırken oyun döngüsünü durdur
-    window.addEventListener('beforeunload', function() {
-      cancelAnimationFrame(gameLoopId);
-    });
   </script>
 </body>
 </html>
