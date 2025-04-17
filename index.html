@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kalp Toplama Oyunu</title>
   <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
     body, html {
       margin: 0;
       padding: 0;
@@ -13,58 +18,112 @@
       height: 100%;
       touch-action: none;
       position: fixed;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
     }
+    
     canvas {
       display: block;
       width: 100%;
       height: 100%;
-    }
-    .controlButton {
       position: absolute;
-      bottom: 20px;
-      padding: 20px;
+      top: 0;
+      left: 0;
+    }
+    
+    .gameControls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 15vh;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 5vw;
+      z-index: 10;
+      pointer-events: none; /* Allows clicks to pass through to canvas if needed */
+    }
+    
+    .controlButton {
+      width: 15vw;
+      height: 15vw;
+      max-width: 80px;
+      max-height: 80px;
       background-color: rgba(0, 0, 0, 0.5);
       color: white;
-      font-size: 24px;
       border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6vw;
       cursor: pointer;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: manipulation;
+      pointer-events: auto; /* Make buttons clickable */
     }
+    
     #jumpButton {
-      left: 50%;
-      transform: translateX(-50%);
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 7vw;
+      margin: 0 auto;
     }
-    #leftButton {
-      left: 20px;
-      width: 50px;
-      height: 50px;
+    
+    .controlGroup {
       display: flex;
-      align-items: center;
-      justify-content: center;
+      gap: 4vw;
     }
-    #rightButton {
-      right: 20px;
-      width: 50px;
-      height: 50px;
+    
+    .hidden {
+      display: none;
+    }
+    
+    #gameOverScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      color: white;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+    
+    #restartButton {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-
-  <div id="jumpButton" class="controlButton">↑</div>
-  <div id="leftButton" class="controlButton">←</div>
-  <div id="rightButton" class="controlButton">→</div>
+  
+  <div class="gameControls">
+    <div class="controlGroup">
+      <div id="leftButton" class="controlButton">←</div>
+    </div>
+    
+    <div id="jumpButton" class="controlButton">↑</div>
+    
+    <div class="controlGroup">
+      <div id="rightButton" class="controlButton">→</div>
+    </div>
+  </div>
+  
+  <div id="gameOverScreen" class="hidden">
+    <h1>Oyun Bitti!</h1>
+    <p id="finalScore">Skorunuz: 0</p>
+    <button id="restartButton">Tekrar Oyna</button>
+  </div>
 
   <img id="face1" src="https://i.hizliresim.com/r6bm8a9.png" style="display: none;">
   <img id="face2" src="https://i.hizliresim.com/37shbzf.png" style="display: none;">
@@ -72,141 +131,136 @@
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const gameOverScreen = document.getElementById("gameOverScreen");
+    const finalScoreEl = document.getElementById("finalScore");
+    const restartButton = document.getElementById("restartButton");
 
+    // Oyun değişkenleri
     let score = 0;
     let lives = 3;
     let gravity = 0.5;
     let jumpStrength = 12;
     let gameStarted = false;
+    let gameOver = false;
     let offsetY = 0;
     let moveLeft = false;
     let moveRight = false;
+    let screenHeight, screenWidth;
 
+    // Oyun nesneleri
     let character1 = {};
     let character2 = {};
     let platforms = [];
     let hearts = [];
+    let obstacles = [];
+
+    // Ekran boyutlarını al
+    function updateScreenSize() {
+      screenWidth = window.innerWidth;
+      screenHeight = window.innerHeight;
+      canvas.width = screenWidth;
+      canvas.height = screenHeight;
+    }
 
     function initGame() {
-      // Oyunu başlat
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      // Oyun değişkenlerini sıfırla
+      score = 0;
+      lives = 3;
+      offsetY = 0;
+      gameOver = false;
+      gameOverScreen.classList.add("hidden");
       
-      // Karakter özelliklerini tanımla
-      const characterSize = Math.min(canvas.width / 10, 40);
+      // Ekran boyutlarını güncelle
+      updateScreenSize();
       
+      // Kontrol butonlarının boyutunu ayarla
+      const controlButtons = document.querySelectorAll(".controlButton");
+      controlButtons.forEach(button => {
+        const size = Math.min(80, screenWidth * 0.15);
+        button.style.width = `${size}px`;
+        button.style.height = `${size}px`;
+        button.style.fontSize = `${size * 0.5}px`;
+      });
+      
+      // Karakter boyutunu hesapla - ekran genişliğinin %8'i
+      const characterSize = Math.min(40, screenWidth * 0.08);
+      
+      // Karakterleri oluştur
       character1 = {
-        x: canvas.width / 2 - characterSize * 1.5,
-        y: canvas.height - 150,
+        x: screenWidth / 2 - characterSize * 1.5,
+        y: screenHeight - 150,
         width: characterSize,
         height: characterSize,
         velX: 0,
         velY: 0,
-        speed: canvas.width / 100,
+        speed: screenWidth / 80, // Ekran genişliğine göre hız
         grounded: false
       };
 
       character2 = {
-        x: canvas.width / 2 + characterSize * 0.5,
-        y: canvas.height - 150,
+        x: screenWidth / 2 + characterSize * 0.5,
+        y: screenHeight - 150,
         width: characterSize,
         height: characterSize,
         velX: 0,
         velY: 0,
-        speed: canvas.width / 100,
+        speed: screenWidth / 80,
         grounded: false
       };
 
-      // İlk platformu oluştur
-      platforms = [{
-        x: canvas.width / 2 - 100,
-        y: canvas.height - 100,
+      // Nesneleri temizle
+      platforms = [];
+      hearts = [];
+      obstacles = [];
+
+      // İlk platformu oluştur - zemin
+      platforms.push({
+        x: screenWidth / 2 - 100,
+        y: screenHeight - 100,
         width: 200,
         height: 20
-      }];
+      });
 
-      // Ekstra platformlar ekle
-      for (let i = 0; i < 5; i++) {
-        createPlatform(canvas.height - 200 - i * 120);
-      }
-
-      // İlk kalpleri oluştur
-      for (let i = 0; i < 3; i++) {
-        createHeart(canvas.height - 250 - i * 120);
+      // Başlangıç platformları ekle
+      for (let i = 0; i < 10; i++) {
+        const y = screenHeight - 200 - i * 120;
+        createPlatform(y);
+        
+        // Rastgele olarak kalp veya engel ekle
+        if (Math.random() < 0.6) {
+          createHeart(y - 40);
+        } else {
+          createObstacle(y - 40);
+        }
       }
 
       gameStarted = true;
     }
 
-    function resizeCanvas() {
-      const oldWidth = canvas.width;
-      const oldHeight = canvas.height;
-      
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
+    // Pencere boyutu değiştiğinde oyunu yeniden başlat
+    window.addEventListener("resize", function() {
       if (gameStarted) {
-        // Tüm oyun nesnelerinin ölçeklerini ayarla
-        const widthRatio = canvas.width / oldWidth;
-        const heightRatio = canvas.height / oldHeight;
-        
-        character1.x *= widthRatio;
-        character1.y *= heightRatio;
-        character1.width = Math.min(canvas.width / 10, 40);
-        character1.height = Math.min(canvas.width / 10, 40);
-        character1.speed = canvas.width / 100;
-        
-        character2.x *= widthRatio;
-        character2.y *= heightRatio;
-        character2.width = Math.min(canvas.width / 10, 40);
-        character2.height = Math.min(canvas.width / 10, 40);
-        character2.speed = canvas.width / 100;
-        
-        platforms.forEach(platform => {
-          platform.x *= widthRatio;
-          platform.width *= widthRatio;
-          platform.y *= heightRatio;
-        });
-        
-        hearts.forEach(heart => {
-          heart.x *= widthRatio;
-          heart.y *= heightRatio;
-        });
-      }
-    }
-
-    window.addEventListener("resize", resizeCanvas);
-    
-    // Dokunmatik ekran için etkinlik dinleyicileri
-    document.getElementById("jumpButton").addEventListener("touchstart", function(e) {
-      e.preventDefault();
-      if (character1.grounded) {
-        character1.velY = -jumpStrength;
-        character1.grounded = false;
-      }
-      if (character2.grounded) {
-        character2.velY = -jumpStrength;
-        character2.grounded = false;
-      }
-    }, { passive: false });
-    
-    document.getElementById("jumpButton").addEventListener("mousedown", function() {
-      if (character1.grounded) {
-        character1.velY = -jumpStrength;
-        character1.grounded = false;
-      }
-      if (character2.grounded) {
-        character2.velY = -jumpStrength;
-        character2.grounded = false;
+        initGame();
       }
     });
-
+    
+    // Dokunmatik kontroller
+    document.getElementById("jumpButton").addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      jumpCharacters();
+    }, { passive: false });
+    
     document.getElementById("leftButton").addEventListener("touchstart", function(e) {
       e.preventDefault();
       moveLeft = true;
     }, { passive: false });
 
     document.getElementById("leftButton").addEventListener("touchend", function(e) {
+      e.preventDefault();
+      moveLeft = false;
+    }, { passive: false });
+    
+    document.getElementById("leftButton").addEventListener("touchcancel", function(e) {
       e.preventDefault();
       moveLeft = false;
     }, { passive: false });
@@ -221,7 +275,14 @@
       moveRight = false;
     }, { passive: false });
     
-    // Fare kontrolü
+    document.getElementById("rightButton").addEventListener("touchcancel", function(e) {
+      e.preventDefault();
+      moveRight = false;
+    }, { passive: false });
+    
+    // Fare kontrolleri
+    document.getElementById("jumpButton").addEventListener("mousedown", jumpCharacters);
+    
     document.getElementById("leftButton").addEventListener("mousedown", function() {
       moveLeft = true;
     });
@@ -245,14 +306,48 @@
     document.getElementById("rightButton").addEventListener("mouseleave", function() {
       moveRight = false;
     });
+    
+    // Klavye kontrolleri
+    window.addEventListener("keydown", function(e) {
+      if (e.key === "ArrowLeft") {
+        moveLeft = true;
+      } else if (e.key === "ArrowRight") {
+        moveRight = true;
+      } else if (e.key === "ArrowUp" || e.key === " ") {
+        jumpCharacters();
+      }
+    });
+    
+    window.addEventListener("keyup", function(e) {
+      if (e.key === "ArrowLeft") {
+        moveLeft = false;
+      } else if (e.key === "ArrowRight") {
+        moveRight = false;
+      }
+    });
+    
+    // Oyunu yeniden başlat butonu
+    restartButton.addEventListener("click", initGame);
+    
+    function jumpCharacters() {
+      if (character1.grounded) {
+        character1.velY = -jumpStrength;
+        character1.grounded = false;
+      }
+      if (character2.grounded) {
+        character2.velY = -jumpStrength;
+        character2.grounded = false;
+      }
+    }
 
     function createPlatform(yPosition) {
-      const minWidth = canvas.width * 0.2;
-      const maxWidth = canvas.width * 0.4;
+      // Platform genişliği ekran genişliğinin %20-40'ı arasında
+      const minWidth = screenWidth * 0.2;
+      const maxWidth = screenWidth * 0.4;
       const platformWidth = minWidth + Math.random() * (maxWidth - minWidth);
       
       const platform = {
-        x: Math.random() * (canvas.width - platformWidth),
+        x: Math.random() * (screenWidth - platformWidth),
         y: yPosition,
         width: platformWidth,
         height: 20
@@ -261,21 +356,43 @@
     }
 
     function createHeart(yPosition) {
+      // Kalp boyutu ekran genişliğinin %6'sı
+      const heartSize = Math.min(30, screenWidth * 0.06);
+      
       const heart = {
-        x: Math.random() * (canvas.width - 40),
+        x: Math.random() * (screenWidth - heartSize),
         y: yPosition,
-        size: Math.min(canvas.width / 15, 30),
+        size: heartSize,
         collected: false
       };
       hearts.push(heart);
     }
+    
+    function createObstacle(yPosition) {
+      // Engel boyutu ekran genişliğinin %8'i
+      const obstacleSize = Math.min(40, screenWidth * 0.08);
+      
+      const obstacle = {
+        x: Math.random() * (screenWidth - obstacleSize),
+        y: yPosition,
+        width: obstacleSize,
+        height: obstacleSize,
+        hit: false
+      };
+      obstacles.push(obstacle);
+    }
 
     function updatePlatformsAndHearts() {
-      // Platform oluşturma olasılığı
+      // Platform oluşturma olasılığı - her 50 karede bir
       if (Math.random() < 0.02) {
         createPlatform(-20 - offsetY);
-        // Her platformla birlikte bir kalp oluştur
-        createHeart(-40 - offsetY);
+        
+        // %60 ihtimalle kalp, %40 ihtimalle engel oluştur
+        if (Math.random() < 0.6) {
+          createHeart(-40 - offsetY);
+        } else {
+          createObstacle(-40 - offsetY);
+        }
       }
     }
 
@@ -289,7 +406,7 @@
     function drawHearts() {
       hearts.forEach((heart) => {
         if (!heart.collected) {
-          const size = heart.size || 20;
+          const size = heart.size;
           ctx.fillStyle = "red";
           ctx.beginPath();
           const centerX = heart.x + size/2;
@@ -311,54 +428,62 @@
         }
       });
     }
+    
+    function drawObstacles() {
+      obstacles.forEach((obstacle) => {
+        if (!obstacle.hit) {
+          ctx.fillStyle = "red";
+          ctx.fillRect(obstacle.x, obstacle.y - offsetY, obstacle.width, obstacle.height);
+          
+          // X şekli çiz
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = Math.max(2, obstacle.width * 0.1);
+          ctx.beginPath();
+          ctx.moveTo(obstacle.x, obstacle.y - offsetY);
+          ctx.lineTo(obstacle.x + obstacle.width, obstacle.y - offsetY + obstacle.height);
+          ctx.moveTo(obstacle.x + obstacle.width, obstacle.y - offsetY);
+          ctx.lineTo(obstacle.x, obstacle.y - offsetY + obstacle.height);
+          ctx.stroke();
+        }
+      });
+    }
 
     function drawCharacter() {
       const face1 = document.getElementById("face1");
       const face2 = document.getElementById("face2");
 
+      // Karakterleri çiz
       ctx.drawImage(face1, character1.x, character1.y - offsetY - character1.height/2, character1.width, character1.height);
       ctx.drawImage(face2, character2.x, character2.y - offsetY - character2.height/2, character2.width, character2.height);
     }
 
     function updateCharacter() {
-      // Karakterlerin dikey hızı
+      // Yerçekimi etkisi
       character1.velY += gravity;
       character2.velY += gravity;
 
-      // Karakterlerin dikey konumu
+      // Dikey hareket
       character1.y += character1.velY;
       character2.y += character2.velY;
 
-      // Karakterlerin yatay konumu
+      // Yatay hareket
       character1.x += character1.velX;
       character2.x += character2.velX;
 
-      // Ekran sınırları kontrolü
+      // Sınırları kontrol et
       if (character1.x < 0) character1.x = 0;
       if (character2.x < 0) character2.x = 0;
 
-      if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
-      if (character2.x + character2.width > canvas.width) character2.x = canvas.width - character2.width;
+      if (character1.x + character1.width > screenWidth) character1.x = screenWidth - character1.width;
+      if (character2.x + character2.width > screenWidth) character2.x = screenWidth - character2.width;
 
-      // Zeminde mi kontrolü
+      // Zemin kontrolü
       character1.grounded = false;
       character2.grounded = false;
 
-      // Ekranın alt sınırı kontrolü
-      if (character1.y + character1.height > canvas.height + offsetY) {
-        character1.y = canvas.height + offsetY - character1.height;
-        character1.grounded = true;
-        character1.velY = 0;
-      }
-
-      if (character2.y + character2.height > canvas.height + offsetY) {
-        character2.y = canvas.height + offsetY - character2.height;
-        character2.grounded = true;
-        character2.velY = 0;
-      }
-
-      // Platform çarpışma kontrolleri
+      // Platform çarpışma kontrolü
       platforms.forEach((platform) => {
+        // Karakter 1 platform kontrolü
         if (character1.x + character1.width > platform.x && 
             character1.x < platform.x + platform.width && 
             character1.y + character1.height <= platform.y + offsetY && 
@@ -368,6 +493,7 @@
           character1.grounded = true;
         }
 
+        // Karakter 2 platform kontrolü
         if (character2.x + character2.width > platform.x && 
             character2.x < platform.x + platform.width && 
             character2.y + character2.height <= platform.y + offsetY && 
@@ -378,63 +504,136 @@
         }
       });
 
-      // Kalp toplama kontrolü
+      // Kalp toplama kontrolü - tam çarpışma kontrolü
       hearts.forEach((heart) => {
-        const heartSize = heart.size || 20;
-        if (!heart.collected && 
-            character1.x + character1.width > heart.x && 
-            character1.x < heart.x + heartSize && 
-            character1.y < heart.y + heartSize + offsetY &&
-            character1.y + character1.height > heart.y + offsetY) {
-          heart.collected = true;
-          score++;
+        if (!heart.collected) {
+          // Karakter 1 kalp kontrolü - tam çarpışma testi
+          if (character1.x < heart.x + heart.size &&
+              character1.x + character1.width > heart.x &&
+              character1.y < heart.y + heart.size + offsetY &&
+              character1.y + character1.height > heart.y + offsetY) {
+            heart.collected = true;
+            score++;
+          }
+          
+          // Karakter 2 kalp kontrolü - tam çarpışma testi
+          if (character2.x < heart.x + heart.size &&
+              character2.x + character2.width > heart.x &&
+              character2.y < heart.y + heart.size + offsetY &&
+              character2.y + character2.height > heart.y + offsetY) {
+            heart.collected = true;
+            score++;
+          }
         }
-        if (!heart.collected && 
-            character2.x + character2.width > heart.x && 
-            character2.x < heart.x + heartSize && 
-            character2.y < heart.y + heartSize + offsetY &&
-            character2.y + character2.height > heart.y + offsetY) {
-          heart.collected = true;
-          score++;
+      });
+      
+      // Engel çarpışma kontrolü
+      obstacles.forEach((obstacle) => {
+        if (!obstacle.hit) {
+          // Karakter 1 engel kontrolü
+          if (character1.x < obstacle.x + obstacle.width &&
+              character1.x + character1.width > obstacle.x &&
+              character1.y < obstacle.y + obstacle.height + offsetY &&
+              character1.y + character1.height > obstacle.y + offsetY) {
+            obstacle.hit = true;
+            loseLife();
+          }
+          
+          // Karakter 2 engel kontrolü
+          if (character2.x < obstacle.x + obstacle.width &&
+              character2.x + character2.width > obstacle.x &&
+              character2.y < obstacle.y + obstacle.height + offsetY &&
+              character2.y + character2.height > obstacle.y + offsetY) {
+            obstacle.hit = true;
+            loseLife();
+          }
         }
       });
     }
+    
+    function loseLife() {
+      lives--;
+      
+      // Oyun bitti mi kontrolü
+      if (lives <= 0) {
+        endGame();
+      }
+    }
+    
+    function endGame() {
+      gameOver = true;
+      finalScoreEl.textContent = `Skorunuz: ${score}`;
+      gameOverScreen.classList.remove("hidden");
+    }
 
-    function movePlatforms() {
-      // Platformları aşağı kaydır
+    function moveObjects() {
+      // Tüm nesneleri aşağı kaydır
+      const scrollSpeed = 2;
+      
       platforms.forEach((platform) => {
-        platform.y += 2;
+        platform.y += scrollSpeed;
       });
       
-      // Kalpleri aşağı kaydır
       hearts.forEach((heart) => {
-        heart.y += 2;
+        heart.y += scrollSpeed;
+      });
+      
+      obstacles.forEach((obstacle) => {
+        obstacle.y += scrollSpeed;
       });
 
-      // Yeni platformlar ve kalpler
-      updatePlatformsAndHearts();
+      // Ekranın dışına çıkan nesneleri kaldır
+      platforms = platforms.filter(platform => platform.y < screenHeight + 100 + offsetY);
+      hearts = hearts.filter(heart => heart.y < screenHeight + 100 + offsetY);
+      obstacles = obstacles.filter(obstacle => obstacle.y < screenHeight + 100 + offsetY);
       
-      // Ekran dışına çıkanları kaldır
-      platforms = platforms.filter(platform => platform.y < canvas.height + 100 + offsetY);
-      hearts = hearts.filter(heart => heart.y < canvas.height + 100 + offsetY);
+      // Yeni nesneler oluştur
+      updatePlatformsAndHearts();
     }
 
     function drawUI() {
-      // Skor ve can bilgisi
+      const fontSize = Math.max(16, Math.min(24, screenWidth * 0.05));
       ctx.fillStyle = "black";
-      ctx.font = Math.max(16, Math.min(24, canvas.width / 20)) + "px Arial";
-      ctx.fillText(`Skor: ${score}`, 30, 30);
-      ctx.fillText(`Canlar: ${lives}`, 30, 60);
+      ctx.font = `${fontSize}px Arial`;
+      ctx.fillText(`Skor: ${score}`, 20, 30);
+      
+      // Canları çiz
+      for (let i = 0; i < lives; i++) {
+        const heartSize = fontSize;
+        const x = 20 + i * (heartSize + 10);
+        const y = 60;
+        
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.moveTo(x + heartSize/2, y - heartSize/4);
+        ctx.bezierCurveTo(
+          x, y - heartSize/2,
+          x, y + heartSize/4,
+          x + heartSize/2, y + heartSize/2
+        );
+        ctx.bezierCurveTo(
+          x + heartSize, y + heartSize/4,
+          x + heartSize, y - heartSize/2,
+          x + heartSize/2, y - heartSize/4
+        );
+        ctx.fill();
+      }
     }
 
     function gameLoop() {
       if (!gameStarted) {
         initGame();
+        return;
+      }
+      
+      if (gameOver) {
+        requestAnimationFrame(gameLoop);
+        return;
       }
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Hareket yönü
+      // Karakter hareketini belirle
       if (moveLeft) {
         character1.velX = -character1.speed;
         character2.velX = -character2.speed;
@@ -446,32 +645,26 @@
         character2.velX = 0;
       }
       
-      // Offseti güncelle - ekran yukarı kaydırma
-      offsetY += 1;
+      // Ekranı yukarı kaydır
+      offsetY += 2;
       
       updateCharacter();
-      movePlatforms();
+      moveObjects();
+      
+      // Çizim işlemleri
       drawPlatforms();
       drawHearts();
+      drawObstacles();
       drawCharacter();
       drawUI();
 
-      // Karakter ekran dışına çıktı mı
-      if (character1.y > canvas.height + offsetY + 100 || 
-         character2.y > canvas.height + offsetY + 100) {
-        lives--;
-        if (lives <= 0) {
-          alert("Oyun Bitti! Skorunuz: " + score);
-          // Oyunu sıfırla
-          score = 0;
-          lives = 3;
-          offsetY = 0;
-          platforms = [];
-          hearts = [];
-          gameStarted = false;
-          initGame();
-        } else {
-          // Karakterleri yeniden platformun üzerine yerleştir
+      // Karakter ekran dışına düştü mü?
+      if (character1.y > screenHeight + offsetY + 100 || 
+          character2.y > screenHeight + offsetY + 100) {
+        loseLife();
+        
+        if (!gameOver) {
+          // Karakterleri en düşük platforma yerleştir
           const lowestPlatform = platforms.reduce((lowest, platform) => 
             platform.y > lowest.y ? platform : lowest, platforms[0]);
           
@@ -485,7 +678,7 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Oyun döngüsünü başlat
+    // Oyunu başlat
     gameLoop();
   </script>
 </body>
