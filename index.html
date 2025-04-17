@@ -5,24 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Kalp Toplama Oyunu</title>
   <style>
-    body, canvas { 
-      margin: 0; padding: 0; 
-      overflow: hidden; background-color: #87CEEB; 
+    body, canvas {
+      margin: 0; padding: 0;
+      overflow: hidden;
+      background-color: #87CEEB;
       display: block;
-      width: 100%; height: 100%; 
+      width: 100%; height: 100%;
     }
     canvas {
       display: block;
     }
     /* Butonlar için stil */
     #leftButton, #rightButton, #jumpButton {
-      position: absolute; 
-      bottom: 20px; 
-      padding: 15px; 
-      background-color: rgba(0, 0, 0, 0.5); 
+      position: absolute;
+      bottom: 20px;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.5);
       color: white;
-      font-size: 24px; 
-      border-radius: 50%; 
+      font-size: 24px;
+      border-radius: 50%;
       cursor: pointer;
     }
     #leftButton { left: 20px; }
@@ -50,9 +51,9 @@
     let platforms = [], hearts = [], obstacles = [];
 
     // Ekran boyutunu ayarlamak için
-    function resizeCanvas() { 
-      canvas.width = window.innerWidth; 
-      canvas.height = window.innerHeight; 
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas(); // Sayfa yüklendiğinde ekranı uygun şekilde ayarla
@@ -129,7 +130,7 @@
       if (character1.x < 0) character1.x = 0;
       if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
       if (character1.y + character1.height > canvas.height) { character1.y = canvas.height - character1.height; character1.grounded = true; character1.velY = 0; }
-      
+
       character2.x = character1.x + character1.width; character2.y = character1.y;
     }
 
