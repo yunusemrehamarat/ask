@@ -126,19 +126,33 @@
       character1.x += character1.velX; character1.y += character1.velY;
 
       character1.grounded = platforms.some(p => character1.x + character1.width > p.x && character1.x < p.x + p.width && character1.y + character1.height > p.y && character1.y + character1.height < p.y + p.height + character1.velY);
-      if (character1.grounded) { character1.y = platforms.find(p => character1.x + character1.width > p.x && character1.x < p.x + p.width).y - character1.height; character1.velY = 0; }
+      
+      if (character1.grounded) {
+        character1.y = platforms.find(p => character1.x + character1.width > p.x && character1.x < p.x + p.width).y - character1.height;
+        character1.velY = 0;
+      }
+
       if (character1.x < 0) character1.x = 0;
       if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
-      if (character1.y + character1.height > canvas.height) { character1.y = canvas.height - character1.height; character1.grounded = true; character1.velY = 0; }
+      if (character1.y + character1.height > canvas.height) {
+        character1.y = canvas.height - character1.height;
+        character1.grounded = true;
+        character1.velY = 0;
+      }
 
-      character2.x = character1.x + character1.width; character2.y = character1.y;
+      character2.x = character1.x + character1.width;
+      character2.y = character1.y;
     }
 
     function drawHeart(x, y, type) {
       ctx.fillStyle = type === 'strong' ? "purple" : "red";
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.bezierCurveTo(x, y - 10, x - 10, y - 10, x - 10, y + 5);
-      ctx.bezierCurveTo(x - 10, y + 15, x, y + 20, x, y + 25); ctx.bezierCurveTo(x, y + 20, x + 10, y + 15, x + 10, y + 5);
-      ctx.bezierCurveTo(x + 10, y - 10, x, y - 10, x, y); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.bezierCurveTo(x, y - 10, x - 10, y - 10, x - 10, y + 5);
+      ctx.bezierCurveTo(x - 10, y + 15, x, y + 20, x, y + 25);
+      ctx.bezierCurveTo(x, y + 20, x + 10, y + 15, x + 10, y + 5);
+      ctx.bezierCurveTo(x + 10, y - 10, x, y - 10, x, y);
+      ctx.fill();
     }
 
     function draw() {
@@ -148,7 +162,10 @@
       obstacles.forEach(o => { ctx.fillStyle = "black"; ctx.fillRect(o.x, o.y, o.width, o.height); });
       ctx.drawImage(face1, character1.x, character1.y - 10, character1.width, character1.height);
       ctx.drawImage(face2, character2.x, character2.y - 10, character2.width, character2.height);
-      ctx.fillStyle = "black"; ctx.font = "24px Arial"; ctx.fillText(`Skor: ${score}`, 30, 30); ctx.fillText(`Canlar: ${lives}`, 30, 60);
+      ctx.fillStyle = "black";
+      ctx.font = "24px Arial";
+      ctx.fillText(`Skor: ${score}`, 30, 30);
+      ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
     function gameLoop() { updateCharacters(); draw(); requestAnimationFrame(gameLoop); }
