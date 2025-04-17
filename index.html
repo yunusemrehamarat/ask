@@ -9,9 +9,10 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       touch-action: none;
+      position: fixed;
     }
     canvas {
       display: block;
@@ -21,22 +22,40 @@
     .controlButton {
       position: absolute;
       bottom: 20px;
-      padding: 15px;
+      padding: 20px;
       background-color: rgba(0, 0, 0, 0.5);
       color: white;
-      font-size: 30px;
+      font-size: 24px;
       border-radius: 50%;
       cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
     }
     #jumpButton {
       left: 50%;
       transform: translateX(-50%);
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #leftButton {
       left: 20px;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #rightButton {
       right: 20px;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   </style>
 </head>
@@ -58,48 +77,120 @@
     let lives = 3;
     let gravity = 0.5;
     let jumpStrength = 12;
+    let gameStarted = false;
     let offsetY = 0;
+    let moveLeft = false;
+    let moveRight = false;
 
-    const character1 = {
-      x: canvas.width / 2 - 60,
-      y: canvas.height - 150 - offsetY,
-      width: 40,
-      height: 40,
-      velX: 0,
-      velY: 0,
-      speed: 5,
-      grounded: false
-    };
-
-    const character2 = {
-      x: canvas.width / 2 + 20,
-      y: canvas.height - 150 - offsetY,
-      width: 40,
-      height: 40,
-      velX: 0,
-      velY: 0,
-      speed: 5,
-      grounded: false
-    };
-
+    let character1 = {};
+    let character2 = {};
     let platforms = [];
     let hearts = [];
 
-    function resizeCanvas() {
+    function initGame() {
+      // Oyunu başlat
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
-      // Karakterlerin başlangıç pozisyonlarını yeniden ayarlama
-      character1.x = canvas.width / 2 - 60;
-      character1.y = canvas.height - 150 - offsetY;
-      character2.x = canvas.width / 2 + 20;
-      character2.y = canvas.height - 150 - offsetY;
+      // Karakter özelliklerini tanımla
+      const characterSize = Math.min(canvas.width / 10, 40);
+      
+      character1 = {
+        x: canvas.width / 2 - characterSize * 1.5,
+        y: canvas.height - 150,
+        width: characterSize,
+        height: characterSize,
+        velX: 0,
+        velY: 0,
+        speed: canvas.width / 100,
+        grounded: false
+      };
+
+      character2 = {
+        x: canvas.width / 2 + characterSize * 0.5,
+        y: canvas.height - 150,
+        width: characterSize,
+        height: characterSize,
+        velX: 0,
+        velY: 0,
+        speed: canvas.width / 100,
+        grounded: false
+      };
+
+      // İlk platformu oluştur
+      platforms = [{
+        x: canvas.width / 2 - 100,
+        y: canvas.height - 100,
+        width: 200,
+        height: 20
+      }];
+
+      // Ekstra platformlar ekle
+      for (let i = 0; i < 5; i++) {
+        createPlatform(canvas.height - 200 - i * 120);
+      }
+
+      // İlk kalpleri oluştur
+      for (let i = 0; i < 3; i++) {
+        createHeart(canvas.height - 250 - i * 120);
+      }
+
+      gameStarted = true;
+    }
+
+    function resizeCanvas() {
+      const oldWidth = canvas.width;
+      const oldHeight = canvas.height;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      if (gameStarted) {
+        // Tüm oyun nesnelerinin ölçeklerini ayarla
+        const widthRatio = canvas.width / oldWidth;
+        const heightRatio = canvas.height / oldHeight;
+        
+        character1.x *= widthRatio;
+        character1.y *= heightRatio;
+        character1.width = Math.min(canvas.width / 10, 40);
+        character1.height = Math.min(canvas.width / 10, 40);
+        character1.speed = canvas.width / 100;
+        
+        character2.x *= widthRatio;
+        character2.y *= heightRatio;
+        character2.width = Math.min(canvas.width / 10, 40);
+        character2.height = Math.min(canvas.width / 10, 40);
+        character2.speed = canvas.width / 100;
+        
+        platforms.forEach(platform => {
+          platform.x *= widthRatio;
+          platform.width *= widthRatio;
+          platform.y *= heightRatio;
+        });
+        
+        hearts.forEach(heart => {
+          heart.x *= widthRatio;
+          heart.y *= heightRatio;
+        });
+      }
     }
 
     window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
-
-    document.getElementById("jumpButton").addEventListener("click", () => {
+    
+    // Dokunmatik ekran için etkinlik dinleyicileri
+    document.getElementById("jumpButton").addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      if (character1.grounded) {
+        character1.velY = -jumpStrength;
+        character1.grounded = false;
+      }
+      if (character2.grounded) {
+        character2.velY = -jumpStrength;
+        character2.grounded = false;
+      }
+    }, { passive: false });
+    
+    document.getElementById("jumpButton").addEventListener("mousedown", function() {
       if (character1.grounded) {
         character1.velY = -jumpStrength;
         character1.grounded = false;
@@ -110,40 +201,60 @@
       }
     });
 
-    let moveLeft = false;
-    let moveRight = false;
-    let leftButtonActive = false;
-    let rightButtonActive = false;
+    document.getElementById("leftButton").addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      moveLeft = true;
+    }, { passive: false });
 
-    document.getElementById("leftButton").addEventListener("mousedown", () => {
-      if (!leftButtonActive) {
-        moveLeft = true;
-        leftButtonActive = true;
-      }
-    });
-
-    document.getElementById("rightButton").addEventListener("mousedown", () => {
-      if (!rightButtonActive) {
-        moveRight = true;
-        rightButtonActive = true;
-      }
-    });
-
-    document.getElementById("leftButton").addEventListener("mouseup", () => {
+    document.getElementById("leftButton").addEventListener("touchend", function(e) {
+      e.preventDefault();
       moveLeft = false;
-      leftButtonActive = false;
+    }, { passive: false });
+
+    document.getElementById("rightButton").addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      moveRight = true;
+    }, { passive: false });
+
+    document.getElementById("rightButton").addEventListener("touchend", function(e) {
+      e.preventDefault();
+      moveRight = false;
+    }, { passive: false });
+    
+    // Fare kontrolü
+    document.getElementById("leftButton").addEventListener("mousedown", function() {
+      moveLeft = true;
     });
 
-    document.getElementById("rightButton").addEventListener("mouseup", () => {
+    document.getElementById("leftButton").addEventListener("mouseup", function() {
+      moveLeft = false;
+    });
+    
+    document.getElementById("leftButton").addEventListener("mouseleave", function() {
+      moveLeft = false;
+    });
+
+    document.getElementById("rightButton").addEventListener("mousedown", function() {
+      moveRight = true;
+    });
+
+    document.getElementById("rightButton").addEventListener("mouseup", function() {
       moveRight = false;
-      rightButtonActive = false;
+    });
+    
+    document.getElementById("rightButton").addEventListener("mouseleave", function() {
+      moveRight = false;
     });
 
     function createPlatform(yPosition) {
+      const minWidth = canvas.width * 0.2;
+      const maxWidth = canvas.width * 0.4;
+      const platformWidth = minWidth + Math.random() * (maxWidth - minWidth);
+      
       const platform = {
-        x: Math.random() * (canvas.width - 150),
+        x: Math.random() * (canvas.width - platformWidth),
         y: yPosition,
-        width: 150,
+        width: platformWidth,
         height: 20
       };
       platforms.push(platform);
@@ -153,15 +264,18 @@
       const heart = {
         x: Math.random() * (canvas.width - 40),
         y: yPosition,
+        size: Math.min(canvas.width / 15, 30),
         collected: false
       };
       hearts.push(heart);
     }
 
     function updatePlatformsAndHearts() {
+      // Platform oluşturma olasılığı
       if (Math.random() < 0.02) {
-        createPlatform(-20);
-        createHeart(-20);
+        createPlatform(-20 - offsetY);
+        // Her platformla birlikte bir kalp oluştur
+        createHeart(-40 - offsetY);
       }
     }
 
@@ -175,78 +289,111 @@
     function drawHearts() {
       hearts.forEach((heart) => {
         if (!heart.collected) {
+          const size = heart.size || 20;
           ctx.fillStyle = "red";
           ctx.beginPath();
-          ctx.moveTo(heart.x, heart.y - offsetY);
-          ctx.bezierCurveTo(heart.x, heart.y - 10 - offsetY, heart.x - 10, heart.y - 10 - offsetY, heart.x - 10, heart.y + 5 - offsetY);
-          ctx.bezierCurveTo(heart.x - 10, heart.y + 15 - offsetY, heart.x, heart.y + 20 - offsetY, heart.x, heart.y + 25 - offsetY);
-          ctx.bezierCurveTo(heart.x, heart.y + 20 - offsetY, heart.x + 10, heart.y + 15 - offsetY, heart.x + 10, heart.y + 5 - offsetY);
-          ctx.bezierCurveTo(heart.x + 10, heart.y - 10 - offsetY, heart.x, heart.y - 10 - offsetY, heart.x, heart.y - offsetY);
+          const centerX = heart.x + size/2;
+          const centerY = heart.y - offsetY + size/2;
+          
+          // Kalp çizimi
+          ctx.moveTo(centerX, centerY - size/4);
+          ctx.bezierCurveTo(
+            centerX - size/2, centerY - size/2,
+            centerX - size/2, centerY + size/4,
+            centerX, centerY + size/2
+          );
+          ctx.bezierCurveTo(
+            centerX + size/2, centerY + size/4,
+            centerX + size/2, centerY - size/2,
+            centerX, centerY - size/4
+          );
           ctx.fill();
         }
       });
     }
 
     function drawCharacter() {
-      ctx.fillStyle = "blue";
-      ctx.fillRect(character1.x, character1.y - offsetY, character1.width, character1.height);
-      ctx.fillRect(character2.x, character2.y - offsetY, character2.width, character2.height);
-
       const face1 = document.getElementById("face1");
       const face2 = document.getElementById("face2");
 
-      ctx.drawImage(face1, character1.x, character1.y - offsetY - 20, character1.width, character1.height);
-      ctx.drawImage(face2, character2.x, character2.y - offsetY - 20, character2.width, character2.height);
+      ctx.drawImage(face1, character1.x, character1.y - offsetY - character1.height/2, character1.width, character1.height);
+      ctx.drawImage(face2, character2.x, character2.y - offsetY - character2.height/2, character2.width, character2.height);
     }
 
     function updateCharacter() {
+      // Karakterlerin dikey hızı
       character1.velY += gravity;
       character2.velY += gravity;
 
+      // Karakterlerin dikey konumu
       character1.y += character1.velY;
       character2.y += character2.velY;
 
+      // Karakterlerin yatay konumu
       character1.x += character1.velX;
       character2.x += character2.velX;
 
+      // Ekran sınırları kontrolü
       if (character1.x < 0) character1.x = 0;
       if (character2.x < 0) character2.x = 0;
 
       if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
       if (character2.x + character2.width > canvas.width) character2.x = canvas.width - character2.width;
 
-      if (character1.y + character1.height > canvas.height) {
-        character1.y = canvas.height - character1.height;
+      // Zeminde mi kontrolü
+      character1.grounded = false;
+      character2.grounded = false;
+
+      // Ekranın alt sınırı kontrolü
+      if (character1.y + character1.height > canvas.height + offsetY) {
+        character1.y = canvas.height + offsetY - character1.height;
         character1.grounded = true;
         character1.velY = 0;
       }
 
-      if (character2.y + character2.height > canvas.height) {
-        character2.y = canvas.height - character2.height;
+      if (character2.y + character2.height > canvas.height + offsetY) {
+        character2.y = canvas.height + offsetY - character2.height;
         character2.grounded = true;
         character2.velY = 0;
       }
 
+      // Platform çarpışma kontrolleri
       platforms.forEach((platform) => {
-        if (character1.x + character1.width > platform.x && character1.x < platform.x + platform.width && character1.y + character1.height <= platform.y && character1.y + character1.height + character1.velY >= platform.y) {
-          character1.y = platform.y - character1.height;
+        if (character1.x + character1.width > platform.x && 
+            character1.x < platform.x + platform.width && 
+            character1.y + character1.height <= platform.y + offsetY && 
+            character1.y + character1.height + character1.velY >= platform.y + offsetY) {
+          character1.y = platform.y + offsetY - character1.height;
           character1.velY = 0;
           character1.grounded = true;
         }
 
-        if (character2.x + character2.width > platform.x && character2.x < platform.x + platform.width && character2.y + character2.height <= platform.y && character2.y + character2.height + character2.velY >= platform.y) {
-          character2.y = platform.y - character2.height;
+        if (character2.x + character2.width > platform.x && 
+            character2.x < platform.x + platform.width && 
+            character2.y + character2.height <= platform.y + offsetY && 
+            character2.y + character2.height + character2.velY >= platform.y + offsetY) {
+          character2.y = platform.y + offsetY - character2.height;
           character2.velY = 0;
           character2.grounded = true;
         }
       });
 
+      // Kalp toplama kontrolü
       hearts.forEach((heart) => {
-        if (!heart.collected && character1.x + character1.width > heart.x && character1.x < heart.x + 40 && character1.y + character1.height > heart.y) {
+        const heartSize = heart.size || 20;
+        if (!heart.collected && 
+            character1.x + character1.width > heart.x && 
+            character1.x < heart.x + heartSize && 
+            character1.y < heart.y + heartSize + offsetY &&
+            character1.y + character1.height > heart.y + offsetY) {
           heart.collected = true;
           score++;
         }
-        if (!heart.collected && character2.x + character2.width > heart.x && character2.x < heart.x + 40 && character2.y + character2.height > heart.y) {
+        if (!heart.collected && 
+            character2.x + character2.width > heart.x && 
+            character2.x < heart.x + heartSize && 
+            character2.y < heart.y + heartSize + offsetY &&
+            character2.y + character2.height > heart.y + offsetY) {
           heart.collected = true;
           score++;
         }
@@ -254,36 +401,40 @@
     }
 
     function movePlatforms() {
+      // Platformları aşağı kaydır
       platforms.forEach((platform) => {
         platform.y += 2;
       });
+      
+      // Kalpleri aşağı kaydır
       hearts.forEach((heart) => {
         heart.y += 2;
       });
 
+      // Yeni platformlar ve kalpler
       updatePlatformsAndHearts();
+      
+      // Ekran dışına çıkanları kaldır
+      platforms = platforms.filter(platform => platform.y < canvas.height + 100 + offsetY);
+      hearts = hearts.filter(heart => heart.y < canvas.height + 100 + offsetY);
     }
 
     function drawUI() {
+      // Skor ve can bilgisi
       ctx.fillStyle = "black";
-      ctx.font = "24px Arial";
+      ctx.font = Math.max(16, Math.min(24, canvas.width / 20)) + "px Arial";
       ctx.fillText(`Skor: ${score}`, 30, 30);
       ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
-    function moveScreenUp() {
-      offsetY += 2;
-    }
-
     function gameLoop() {
+      if (!gameStarted) {
+        initGame();
+      }
+      
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      updateCharacter();
-      movePlatforms();
-      drawCharacter();
-      drawPlatforms();
-      drawHearts();
-      drawUI();
-
+      
+      // Hareket yönü
       if (moveLeft) {
         character1.velX = -character1.speed;
         character2.velX = -character2.speed;
@@ -294,16 +445,39 @@
         character1.velX = 0;
         character2.velX = 0;
       }
+      
+      // Offseti güncelle - ekran yukarı kaydırma
+      offsetY += 1;
+      
+      updateCharacter();
+      movePlatforms();
+      drawPlatforms();
+      drawHearts();
+      drawCharacter();
+      drawUI();
 
-      if (character1.y > canvas.height || character2.y > canvas.height) {
+      // Karakter ekran dışına çıktı mı
+      if (character1.y > canvas.height + offsetY + 100 || 
+         character2.y > canvas.height + offsetY + 100) {
         lives--;
         if (lives <= 0) {
-          alert("Game Over!");
-          location.reload();
+          alert("Oyun Bitti! Skorunuz: " + score);
+          // Oyunu sıfırla
+          score = 0;
+          lives = 3;
+          offsetY = 0;
+          platforms = [];
+          hearts = [];
+          gameStarted = false;
+          initGame();
         } else {
-          character1.y = canvas.height - 150;
+          // Karakterleri yeniden platformun üzerine yerleştir
+          const lowestPlatform = platforms.reduce((lowest, platform) => 
+            platform.y > lowest.y ? platform : lowest, platforms[0]);
+          
+          character1.y = lowestPlatform.y - character1.height;
           character1.velY = 0;
-          character2.y = canvas.height - 150;
+          character2.y = lowestPlatform.y - character2.height;
           character2.velY = 0;
         }
       }
@@ -311,6 +485,7 @@
       requestAnimationFrame(gameLoop);
     }
 
+    // Oyun döngüsünü başlat
     gameLoop();
   </script>
 </body>
