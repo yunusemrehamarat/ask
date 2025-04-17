@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <title>Kalp Toplama Oyunu</title>
   <style>
     body, canvas {
@@ -45,16 +46,17 @@
   <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
     let score = 0, level = 1, lives = 3, doubleJumpAvailable = true;
-    let gameOver = false;
 
-    const character = { x: 200, y: canvas.height - 200, width: 40, height: 40, velX: 0, velY: 0, speed: 5, jumping: false, grounded: false };
+    const character1 = { x: 200, y: canvas.height - 200, width: 40, height: 40, velX: 0, velY: 0, speed: 5, jumping: false, grounded: false };
+    const character2 = { x: character1.x + 40, y: character1.y, width: 40, height: 40 };
     const gravity = 0.5, jumpStrength = 14;
-    let platforms = [], hearts = [];
+    let platforms = [], hearts = [], obstacles = [];
 
     // Ekran boyutunu ayarlamak için
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      // Butonları mobil ekran boyutuna göre yeniden ayarlıyoruz
       document.getElementById("leftButton").style.fontSize = `${Math.min(canvas.width, canvas.height) / 15}px`;
       document.getElementById("rightButton").style.fontSize = `${Math.min(canvas.width, canvas.height) / 15}px`;
       document.getElementById("jumpButton").style.fontSize = `${Math.min(canvas.width, canvas.height) / 15}px`;
@@ -62,31 +64,35 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas(); // Sayfa yüklendiğinde ekranı uygun şekilde ayarla
 
-    // Platformlar ve kalplerin dinamik olarak yerleştirilmesi
     function createLevel() {
       const baseY = canvas.height - 100;
       platforms = [];
       hearts = [];
+      obstacles = [];
       
       const platformData = [
         { x: 0, y: baseY, width: canvas.width, height: 100 },
-        { x: 0.2 * canvas.width, y: baseY - 100, width: 0.15 * canvas.width, height: 20 },
-        { x: 0.4 * canvas.width, y: baseY - 180, width: 0.15 * canvas.width, height: 20 },
-        { x: 0.6 * canvas.width, y: baseY - 250, width: 0.15 * canvas.width, height: 20 },
-        { x: 0.8 * canvas.width, y: baseY - 180, width: 0.15 * canvas.width, height: 20 },
-        { x: 1.0 * canvas.width, y: baseY - 100, width: 0.15 * canvas.width, height: 20 }
+        { x: 200, y: baseY - 100, width: 150, height: 20 },
+        { x: 400, y: baseY - 180, width: 150, height: 20 },
+        { x: 650, y: baseY - 250, width: 150, height: 20 },
+        { x: 900, y: baseY - 180, width: 150, height: 20 },
+        { x: 1150, y: baseY - 100, width: 150, height: 20 }
       ];
 
       const heartData = [
-        { x: 0.2 * canvas.width, y: baseY - 140, collected: false, type: 'normal' },
-        { x: 0.4 * canvas.width, y: baseY - 220, collected: false, type: 'strong' },
-        { x: 0.6 * canvas.width, y: baseY - 290, collected: false, type: 'normal' },
-        { x: 0.8 * canvas.width, y: baseY - 220, collected: false, type: 'normal' },
-        { x: 1.0 * canvas.width, y: baseY - 140, collected: false, type: 'strong' }
+        { x: 240, y: baseY - 140, collected: false, type: 'normal' },
+        { x: 460, y: baseY - 220, collected: false, type: 'strong' },
+        { x: 720, y: baseY - 290, collected: false, type: 'normal' },
+        { x: 980, y: baseY - 220, collected: false, type: 'normal' },
+        { x: 1240, y: baseY - 140, collected: false, type: 'strong' }
       ];
 
       platforms.push(...platformData);
       hearts.push(...heartData);
+
+      for (let i = 0; i < 6; i++) {
+        obstacles.push({ x: Math.random() * (canvas.width - 30), y: Math.random() * (canvas.height - 200), width: 30, height: 30 });
+      }
     }
 
     createLevel();
@@ -99,61 +105,55 @@
     canvas.addEventListener("touchstart", e => { touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
     canvas.addEventListener("touchmove", e => { touchEnd = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
     canvas.addEventListener("touchend", () => {
-      if (touchEnd.y - touchStart.y > 30 && (character.grounded || doubleJumpAvailable)) {
-        character.velY = -jumpStrength; character.grounded = false; character.jumping = true;
-        doubleJumpAvailable = character.grounded ? true : false;
+      if (touchEnd.y - touchStart.y > 30 && (character1.grounded || doubleJumpAvailable)) {
+        character1.velY = -jumpStrength; character1.grounded = false; character1.jumping = true;
+        doubleJumpAvailable = character1.grounded ? true : false;
       }
     });
 
-    document.getElementById("leftButton").addEventListener("touchstart", () => character.velX = -character.speed);
-    document.getElementById("rightButton").addEventListener("touchstart", () => character.velX = character.speed);
+    document.getElementById("leftButton").addEventListener("touchstart", () => character1.velX = -character1.speed);
+    document.getElementById("rightButton").addEventListener("touchstart", () => character1.velX = character1.speed);
     document.getElementById("jumpButton").addEventListener("touchstart", () => {
-      if (character.grounded || doubleJumpAvailable) {
-        character.velY = -jumpStrength; character.grounded = false; character.jumping = true;
-        doubleJumpAvailable = character.grounded ? true : false;
+      if (character1.grounded || doubleJumpAvailable) {
+        character1.velY = -jumpStrength; character1.grounded = false; character1.jumping = true;
+        doubleJumpAvailable = character1.grounded ? true : false;
       }
     });
 
-    document.getElementById("leftButton").addEventListener("touchend", () => character.velX = 0);
-    document.getElementById("rightButton").addEventListener("touchend", () => character.velX = 0);
+    document.getElementById("leftButton").addEventListener("touchend", () => character1.velX = 0);
+    document.getElementById("rightButton").addEventListener("touchend", () => character1.velX = 0);
     document.getElementById("jumpButton").addEventListener("touchend", () => {});
 
     function updateCharacters() {
-      character.velY += gravity;
+      character1.velY += gravity;
 
-      if (keys["a"] || keys["ArrowLeft"]) character.velX -= 0.5;
-      if (keys["d"] || keys["ArrowRight"]) character.velX += 0.5;
-      character.velX *= 0.8;
-      character.x += character.velX;
-      character.y += character.velY;
+      if (keys["a"] || keys["ArrowLeft"]) character1.velX -= 0.5;
+      if (keys["d"] || keys["ArrowRight"]) character1.velX += 0.5;
+      character1.velX *= 0.8;
+      character1.x += character1.velX;
+      character1.y += character1.velY;
 
-      character.grounded = false;
+      character1.grounded = false;
 
       platforms.forEach(p => {
-        if (character.x + character.width > p.x && character.x < p.x + p.width &&
-            character.y + character.height <= p.y && character.y + character.height + character.velY >= p.y) {
-          character.y = p.y - character.height;
-          character.velY = 0;
-          character.grounded = true;
+        if (character1.x + character1.width > p.x && character1.x < p.x + p.width &&
+            character1.y + character1.height <= p.y && character1.y + character1.height + character1.velY >= p.y) {
+          character1.y = p.y - character1.height;
+          character1.velY = 0;
+          character1.grounded = true;
         }
       });
 
-      if (character.x < 0) character.x = 0;
-      if (character.x + character.width > canvas.width) character.x = canvas.width - character.width;
-      if (character.y + character.height > canvas.height) {
-        character.y = canvas.height - character.height;
-        character.grounded = true;
-        character.velY = 0;
+      if (character1.x < 0) character1.x = 0;
+      if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
+      if (character1.y + character1.height > canvas.height) {
+        character1.y = canvas.height - character1.height;
+        character1.grounded = true;
+        character1.velY = 0;
       }
 
-      // Kalpleri toplama
-      hearts.forEach(heart => {
-        if (!heart.collected && character.x + character.width > heart.x && character.x < heart.x + 20 && 
-            character.y + character.height > heart.y && character.y < heart.y + 20) {
-          heart.collected = true;
-          score += (heart.type === 'strong') ? 2 : 1; // Güçlü kalp 2 puan verir
-        }
-      });
+      character2.x = character1.x + character1.width;
+      character2.y = character1.y;
     }
 
     function drawHeart(x, y, type) {
@@ -171,19 +171,16 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
       hearts.forEach(h => { if (!h.collected) drawHeart(h.x, h.y, h.type); });
-      ctx.drawImage(face1, character.x, character.y - 10, character.width, character.height);
+      obstacles.forEach(o => { ctx.fillStyle = "black"; ctx.fillRect(o.x, o.y, o.width, o.height); });
+      ctx.drawImage(face1, character1.x, character1.y - 10, character1.width, character1.height);
+      ctx.drawImage(face2, character2.x, character2.y - 10, character2.width, character2.height);
       ctx.fillStyle = "black";
       ctx.font = "24px Arial";
       ctx.fillText(`Skor: ${score}`, 30, 30);
       ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
-    function gameLoop() { 
-      if (gameOver) return;
-      updateCharacters(); 
-      draw(); 
-      requestAnimationFrame(gameLoop); 
-    }
+    function gameLoop() { updateCharacters(); draw(); requestAnimationFrame(gameLoop); }
     gameLoop();
   </script>
 </body>
