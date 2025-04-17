@@ -42,7 +42,7 @@
     
     .game-info {
       position: absolute;
-      bottom: 14%;
+      bottom: 12%; /* Alt kısmı biraz daha üstte */
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -235,8 +235,8 @@
       const totalWidth = screenWidth * 0.2; // İki karakterin toplam genişliği
       characters[0].x = screenWidth / 2 - totalWidth / 2;
       characters[1].x = characters[0].x + characters[0].width;
-      characters[0].y = screenHeight * 0.6;  // Karakteri biraz daha aşağıya yerleştir
-      characters[1].y = screenHeight * 0.6;  // Karakteri biraz daha aşağıya yerleştir
+      characters[0].y = screenHeight * 0.7;  // Karakteri biraz daha aşağıya yerleştir
+      characters[1].y = screenHeight * 0.7;  // Karakteri biraz daha aşağıya yerleştir
       
       // UI'ı güncelle
       timerEl.textContent = gameTime;
@@ -277,7 +277,7 @@
         const totalWidth = characters[0].width + characters[1].width;
         characters[0].x = Math.max(0, Math.min(screenWidth - totalWidth, characters[0].x));
         characters[1].x = characters[0].x + characters[0].width;
-        characters[0].y = screenHeight * 0.6 - characters[0].height / 2;
+        characters[0].y = screenHeight * 0.7 - characters[0].height / 2;
         characters[1].y = characters[0].y;
       }
     }
@@ -346,33 +346,18 @@
       }
       
       // Kalpleri güncelle
-      for (let i = hearts.length - 1; i >= 0; i--) {
-        hearts[i].y += hearts[i].speed;
+      hearts.forEach((heart) => {
+        heart.y += heart.speed;
         
-        // Çarpışma kontrolü (her iki karakter için)
-        let collected = false;
-        characters.forEach(char => {
-          if (
-            !collected &&
-            char.x < hearts[i].x + hearts[i].size &&
-            char.x + char.width > hearts[i].x &&
-            char.y < hearts[i].y + hearts[i].size &&
-            char.y + char.height > hearts[i].y
-          ) {
-            score++;
-            scoreEl.textContent = score;
-            hearts.splice(i, 1);
-            collected = true;
-          }
-        });
-        
-        // Kalp ekrandan çıkarsa
-        if (hearts[i] && hearts[i].y > screenHeight) hearts.splice(i, 1);
-      }
+        if (heart.y > screenHeight) {
+          hearts = hearts.filter((h) => h !== heart);
+        }
+      });
       
-      // Oyun süresi bitiyor mu?
+      // Süreyi güncelle
       gameTime -= deltaTime / 1000;
       if (gameTime <= 0) {
+        gameTime = 0;
         gameActive = false;
         gameOver();
       } else {
