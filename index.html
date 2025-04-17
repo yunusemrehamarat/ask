@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kalp Toplama Oyunu</title>
   <style>
     * {
@@ -16,376 +16,403 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      touch-action: none;
       position: fixed;
-      background-color: #f0f0f0;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      touch-action: none;
+      background-color: #f5f5f5;
+      font-family: Arial, sans-serif;
     }
     
     canvas {
       display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-    
-    #timer {
       position: absolute;
-      top: max(10px, env(safe-area-inset-top));
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: min(5vw, 24px);
-      color: black;
-      background-color: rgba(255,255,255,0.7);
-      padding: min(1vw, 5px) min(3vw, 15px);
-      border-radius: 20px;
-      z-index: 10;
-      white-space: nowrap;
+      top: 0;
+      left: 0;
     }
     
-    #score {
-      position: absolute;
-      top: max(10px, env(safe-area-inset-top));
-      left: max(10px, env(safe-area-inset-left));
-      font-size: min(5vw, 24px);
-      color: black;
-      background-color: rgba(255,255,255,0.7);
-      padding: min(1vw, 5px) min(3vw, 15px);
-      border-radius: 20px;
-      z-index: 10;
-      white-space: nowrap;
-    }
-    
-    .controls {
-      position: absolute;
-      bottom: max(20px, env(safe-area-inset-bottom));
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      gap: min(5vw, 20px);
-      z-index: 10;
-      padding: 0 min(5vw, 20px);
-    }
-    
-    .control-btn {
-      width: min(20vw, 80px);
-      height: min(20vw, 80px);
-      background-color: rgba(0,0,0,0.5);
-      color: white;
-      border-radius: 50%;
+    #leftButton, #rightButton {
+      position: fixed;
+      bottom: 20px;
+      width: 40%;
+      height: 80px;
+      background-color: rgba(0,0,0,0.2);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: min(8vw, 30px);
+      color: white;
+      font-size: 36px;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: manipulation;
+      z-index: 5;
     }
     
-    #gameOver {
-      position: absolute;
+    #leftButton {
+      left: 5%;
+    }
+    
+    #rightButton {
+      right: 5%;
+    }
+    
+    #gameOverScreen {
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       background-color: rgba(0,0,0,0.8);
-      color: white;
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 20;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      box-sizing: border-box;
+      color: white;
+      font-size: 24px;
+      z-index: 10;
     }
     
-    #restartBtn {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
+    #restartButton {
+      margin-top: 40px;
+      padding: 15px 30px;
+      background-color: #e74c3c;
       border: none;
       border-radius: 5px;
-      font-size: min(5vw, 18px);
+      color: white;
+      font-size: 20px;
       cursor: pointer;
-    }
-    
-    h1 {
-      font-size: min(8vw, 32px);
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    
-    #finalScore {
-      font-size: min(6vw, 24px);
     }
   </style>
 </head>
 <body>
-  <div id="timer">60</div>
-  <div id="score">0</div>
   <canvas id="gameCanvas"></canvas>
   
-  <div class="controls">
-    <div id="leftBtn" class="control-btn">←</div>
-    <div id="rightBtn" class="control-btn">→</div>
-  </div>
+  <div id="leftButton">←</div>
+  <div id="rightButton">→</div>
   
-  <div id="gameOver">
-    <h1>Oyun Bitti!</h1>
-    <p id="finalScore">Skor: 0</p>
-    <button id="restartBtn">Tekrar Oyna</button>
+  <div id="gameOverScreen">
+    <h1>Süre Doldu!</h1>
+    <p id="finalScore">Skorunuz: 0</p>
+    <button id="restartButton">Tekrar Oyna</button>
   </div>
 
   <script>
+    // Oyun değişkenleri
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    const timerEl = document.getElementById("timer");
-    const scoreEl = document.getElementById("score");
-    const gameOverEl = document.getElementById("gameOver");
-    const finalScoreEl = document.getElementById("finalScore");
-    const restartBtn = document.getElementById("restartBtn");
-    const leftBtn = document.getElementById("leftBtn");
-    const rightBtn = document.getElementById("rightBtn");
-
-    // Oyun ayarları
-    const GAME_DURATION = 60; // 60 saniye
-    let gameTime = GAME_DURATION;
+    const gameOverScreen = document.getElementById("gameOverScreen");
+    const finalScore = document.getElementById("finalScore");
+    const restartButton = document.getElementById("restartButton");
+    
+    let gameWidth, gameHeight;
     let score = 0;
+    let timer = 60;
     let gameActive = false;
-    
-    // Ekran boyutları
-    let screenWidth, screenHeight;
-    
-    // Oyun nesneleri
-    let character = {
-      x: 0,
-      y: 0,
-      width: 50,
-      height: 50,
-      speed: 8
-    };
-    
-    let hearts = [];
-    let lastHeartTime = 0;
-    let heartInterval = 1000; // 1 saniyede bir kalp
-    
-    // Kontroller
+    let timerInterval;
     let moveLeft = false;
     let moveRight = false;
     
-    // Oyun döngüsü
-    let lastTime = 0;
-    let gameLoopId;
+    // Görsel değişkenler
+    const heartSize = 30;
+    const characterSize = 40;
+    let hearts = [];
     
-    // Başlangıç
-    initGame();
+    // Karakter pozisyonu
+    let character = {
+      x: 0,
+      y: 0,
+      width: characterSize * 2 + 10, // İki karakter genişliği + biraz boşluk
+      speed: 7
+    };
     
+    // Oyun başlatma
     function initGame() {
-      // Ekran boyutlarını ayarla
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
+      // Ekran boyutlarını al
+      updateScreenSize();
       
-      // Oyun durumunu sıfırla
-      gameTime = GAME_DURATION;
+      // Karakter başlangıç pozisyonu
+      character.x = gameWidth / 2 - character.width / 2;
+      character.y = gameHeight - characterSize - 100; // Alt kısımdan biraz yukarıda
+      
+      // Oyun değişkenlerini sıfırla
       score = 0;
-      gameActive = true;
+      timer = 60;
       hearts = [];
-      lastHeartTime = 0;
       
-      // Karakteri ortaya yerleştir
-      character.x = screenWidth / 2 - character.width / 2;
-      character.y = screenHeight / 2;
+      // Oyunu başlat
+      gameActive = true;
+      gameOverScreen.style.display = "none";
       
-      // UI'ı güncelle
-      timerEl.textContent = gameTime;
-      scoreEl.textContent = score;
-      gameOverEl.style.display = 'none';
-      
-      // Kontroller
-      setupControls();
-      
-      // Oyun döngüsünü başlat
-      if (gameLoopId) cancelAnimationFrame(gameLoopId);
-      lastTime = performance.now();
-      gameLoopId = requestAnimationFrame(gameLoop);
+      // Zamanlayıcıyı başlat
+      clearInterval(timerInterval);
+      timerInterval = setInterval(function() {
+        timer--;
+        if (timer <= 0) {
+          endGame();
+        }
+      }, 1000);
     }
     
-    function resizeCanvas() {
-      screenWidth = window.innerWidth;
-      screenHeight = window.innerHeight;
+    // Ekran boyutlarını güncelle
+    function updateScreenSize() {
+      gameWidth = window.innerWidth;
+      gameHeight = window.innerHeight;
       
-      // iOS Safari için canvas boyutunu doğru ayarla
-      canvas.width = screenWidth * window.devicePixelRatio;
-      canvas.height = screenHeight * window.devicePixelRatio;
-      canvas.style.width = screenWidth + 'px';
-      canvas.style.height = screenHeight + 'px';
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      canvas.width = gameWidth;
+      canvas.height = gameHeight;
       
-      // Karakter boyutunu ekrana göre ayarla
-      character.width = screenWidth * 0.12;
-      character.height = screenWidth * 0.12;
-      character.speed = screenWidth * 0.015;
+      // Karakterin dikey pozisyonunu güncelle
+      if (character.y) {
+        character.y = gameHeight - characterSize - 100;
+      }
       
-      // Karakteri yeniden ortala
+      // Buton boyutlarını ayarla
+      const leftButton = document.getElementById("leftButton");
+      const rightButton = document.getElementById("rightButton");
+      
+      // Mobil cihazlarda butonları daha büyük yap
+      const buttonHeight = Math.min(80, gameHeight * 0.12);
+      leftButton.style.height = buttonHeight + "px";
+      rightButton.style.height = buttonHeight + "px";
+      
+      // Buton pozisyonlarını ayarla
+      leftButton.style.bottom = (gameHeight * 0.05) + "px";
+      rightButton.style.bottom = (gameHeight * 0.05) + "px";
+    }
+    
+    // Oyun döngüsü
+    function gameLoop() {
+      // Ekranı temizle
+      ctx.clearRect(0, 0, gameWidth, gameHeight);
+      
+      // Arka plan
+      ctx.fillStyle = "#f5f5f5";
+      ctx.fillRect(0, 0, gameWidth, gameHeight);
+      
       if (gameActive) {
-        character.x = screenWidth / 2 - character.width / 2;
-        character.y = screenHeight / 2;
-      }
-    }
-    
-    function setupControls() {
-      // Dokunmatik kontroller
-      const handleLeftStart = () => { moveLeft = true; };
-      const handleLeftEnd = () => { moveLeft = false; };
-      const handleRightStart = () => { moveRight = true; };
-      const handleRightEnd = () => { moveRight = false; };
-      
-      leftBtn.addEventListener('touchstart', handleLeftStart, { passive: true });
-      leftBtn.addEventListener('touchend', handleLeftEnd, { passive: true });
-      leftBtn.addEventListener('touchcancel', handleLeftEnd, { passive: true });
-      
-      rightBtn.addEventListener('touchstart', handleRightStart, { passive: true });
-      rightBtn.addEventListener('touchend', handleRightEnd, { passive: true });
-      rightBtn.addEventListener('touchcancel', handleRightEnd, { passive: true });
-      
-      // Fare kontrolleri
-      leftBtn.addEventListener('mousedown', handleLeftStart);
-      leftBtn.addEventListener('mouseup', handleLeftEnd);
-      leftBtn.addEventListener('mouseleave', handleLeftEnd);
-      
-      rightBtn.addEventListener('mousedown', handleRightStart);
-      rightBtn.addEventListener('mouseup', handleRightEnd);
-      rightBtn.addEventListener('mouseleave', handleRightEnd);
-      
-      // Klavye kontrolleri
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') moveLeft = true;
-        if (e.key === 'ArrowRight') moveRight = true;
-      }, { passive: true });
-      
-      window.addEventListener('keyup', (e) => {
-        if (e.key === 'ArrowLeft') moveLeft = false;
-        if (e.key === 'ArrowRight') moveRight = false;
-      }, { passive: true });
-    }
-    
-    function update(deltaTime) {
-      // Karakter hareketi
-      if (moveLeft) character.x -= character.speed;
-      if (moveRight) character.x += character.speed;
-      
-      // Sınır kontrolü
-      if (character.x < 0) character.x = 0;
-      if (character.x + character.width > screenWidth) {
-        character.x = screenWidth - character.width;
-      }
-      
-      // Kalp oluştur
-      lastHeartTime += deltaTime;
-      if (lastHeartTime >= heartInterval) {
-        createHeart();
-        lastHeartTime = 0;
-        // Zamanla kalp oluşturma hızını artır
-        heartInterval = Math.max(300, heartInterval * 0.99);
-      }
-      
-      // Kalpleri hareket ettir ve toplananları kaldır
-      for (let i = hearts.length - 1; i >= 0; i--) {
-        hearts[i].y += hearts[i].speed;
+        // Karakteri hareket ettir
+        updateCharacter();
         
-        // Çarpışma kontrolü
-        if (
-          character.x < hearts[i].x + hearts[i].size &&
-          character.x + character.width > hearts[i].x &&
-          character.y < hearts[i].y + hearts[i].size &&
-          character.y + character.height > hearts[i].y
-        ) {
+        // Kalpleri güncelle
+        updateHearts();
+        
+        // Çizim
+        drawCharacter();
+        drawHearts();
+      }
+      
+      // Her durumda UI çiz
+      drawUI();
+      
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Karakteri güncelle
+    function updateCharacter() {
+      // Karakter hareketlerini yönet
+      if (moveLeft) {
+        character.x -= character.speed;
+      }
+      if (moveRight) {
+        character.x += character.speed;
+      }
+      
+      // Ekran sınırları kontrolü
+      if (character.x < 0) {
+        character.x = 0;
+      }
+      if (character.x + character.width > gameWidth) {
+        character.x = gameWidth - character.width;
+      }
+    }
+    
+    // Kalpleri güncelle
+    function updateHearts() {
+      // Yeni kalp oluşturma olasılığı
+      if (Math.random() < 0.03) {
+        createHeart();
+      }
+      
+      // Kalpleri hareket ettir ve çarpışmaları kontrol et
+      for (let i = hearts.length - 1; i >= 0; i--) {
+        const heart = hearts[i];
+        heart.y += heart.speed;
+        
+        // Karakter ile kalp çarpışma kontrolü
+        if (heart.y + heartSize > character.y && 
+            heart.y < character.y + characterSize &&
+            heart.x + heartSize > character.x && 
+            heart.x < character.x + character.width) {
+          // Kalbi kaldır ve skoru artır
           hearts.splice(i, 1);
           score++;
-          scoreEl.textContent = score;
-          continue;
         }
         
         // Ekran dışına çıkan kalpleri kaldır
-        if (hearts[i].y > screenHeight) {
+        if (heart.y > gameHeight) {
           hearts.splice(i, 1);
         }
       }
-      
-      // Zamanı güncelle
-      gameTime -= deltaTime / 1000;
-      timerEl.textContent = Math.ceil(gameTime);
-      
-      // Oyun bitiş kontrolü
-      if (gameTime <= 0) {
-        endGame();
-      }
     }
     
+    // Yeni kalp oluştur
     function createHeart() {
-      const size = screenWidth * 0.08;
-      hearts.push({
-        x: Math.random() * (screenWidth - size),
-        y: -size,
-        size: size,
-        speed: 3 + Math.random() * 2
-      });
+      const heart = {
+        x: Math.random() * (gameWidth - heartSize),
+        y: -heartSize,
+        speed: 2 + Math.random() * 3 // Farklı hızlarda düşmesi için
+      };
+      hearts.push(heart);
     }
     
-    function draw() {
-      // Canvas boyutunu düzgün ayarla (iOS için)
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    // Karakteri çiz
+    function drawCharacter() {
+      // Kız ve erkek karakterleri temsilen renkli daire çiz
+      // Sol karakter (kız temsili)
+      ctx.fillStyle = "#FF69B4"; // Pembe
+      ctx.beginPath();
+      ctx.arc(character.x + characterSize/2, character.y + characterSize/2, characterSize/2, 0, Math.PI * 2);
+      ctx.fill();
       
-      // Arkaplanı temizle
-      ctx.clearRect(0, 0, screenWidth, screenHeight);
-      
-      // Karakteri çiz (kırmızı kare)
-      ctx.fillStyle = 'red';
-      ctx.fillRect(character.x, character.y, character.width, character.height);
-      
-      // Kalpleri çiz
-      ctx.fillStyle = 'pink';
+      // Sağ karakter (erkek temsili)
+      ctx.fillStyle = "#4169E1"; // Mavi
+      ctx.beginPath();
+      ctx.arc(character.x + characterSize + 10 + characterSize/2, character.y + characterSize/2, characterSize/2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Kalpleri çiz
+    function drawHearts() {
       hearts.forEach(heart => {
+        // Kalp çizimi
+        ctx.fillStyle = "#e74c3c";
         ctx.beginPath();
-        ctx.moveTo(heart.x + heart.size/2, heart.y);
+        const centerX = heart.x + heartSize/2;
+        const centerY = heart.y + heartSize/2;
+        
+        // Kalp şekli
+        ctx.moveTo(centerX, centerY - heartSize/4);
         ctx.bezierCurveTo(
-          heart.x + heart.size, heart.y,
-          heart.x + heart.size, heart.y + heart.size/2,
-          heart.x + heart.size/2, heart.y + heart.size/2
+          centerX - heartSize/2, centerY - heartSize/2,
+          centerX - heartSize/2, centerY + heartSize/4,
+          centerX, centerY + heartSize/2
         );
         ctx.bezierCurveTo(
-          heart.x, heart.y + heart.size/2,
-          heart.x, heart.y,
-          heart.x + heart.size/2, heart.y
+          centerX + heartSize/2, centerY + heartSize/4,
+          centerX + heartSize/2, centerY - heartSize/2,
+          centerX, centerY - heartSize/4
         );
-        ctx.closePath();
         ctx.fill();
       });
     }
     
+    // Arayüzü çiz
+    function drawUI() {
+      // Skor ve zamanlayıcı arka planı
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(0, 0, gameWidth, 50);
+      
+      // Skor
+      ctx.fillStyle = "white";
+      ctx.font = "bold 24px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText(`Skor: ${score}`, 20, 33);
+      
+      // Zamanlayıcı
+      ctx.fillStyle = "white";
+      ctx.font = "bold 24px Arial";
+      ctx.textAlign = "right";
+      ctx.fillText(`Süre: ${timer}`, gameWidth - 20, 33);
+    }
+    
+    // Oyunu bitir
     function endGame() {
       gameActive = false;
-      finalScoreEl.textContent = `Skor: ${score}`;
-      gameOverEl.style.display = 'flex';
-      cancelAnimationFrame(gameLoopId);
+      clearInterval(timerInterval);
+      finalScore.textContent = `Skorunuz: ${score}`;
+      gameOverScreen.style.display = "flex";
     }
     
-    function gameLoop(currentTime) {
-      const deltaTime = currentTime - lastTime;
-      lastTime = currentTime;
-      
-      if (gameActive) {
-        update(deltaTime);
-        draw();
+    // Pencere boyutu değiştiğinde
+    window.addEventListener("resize", function() {
+      updateScreenSize();
+      // Yeniden başlat ekranı görünürse oyunu baştan başlat
+      if (gameOverScreen.style.display === "flex") {
+        initGame();
       }
-      
-      gameLoopId = requestAnimationFrame(gameLoop);
-    }
+    });
     
-    // Yeniden başlat butonu
-    restartBtn.addEventListener('click', initGame);
+    // Mobil kontroller
+    document.getElementById("leftButton").addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      moveLeft = true;
+    }, { passive: false });
+    
+    document.getElementById("leftButton").addEventListener("touchend", function(e) {
+      e.preventDefault();
+      moveLeft = false;
+    }, { passive: false });
+    
+    document.getElementById("rightButton").addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      moveRight = true;
+    }, { passive: false });
+    
+    document.getElementById("rightButton").addEventListener("touchend", function(e) {
+      e.preventDefault();
+      moveRight = false;
+    }, { passive: false });
+    
+    // Fare kontrolleri
+    document.getElementById("leftButton").addEventListener("mousedown", function() {
+      moveLeft = true;
+    });
+    
+    document.getElementById("leftButton").addEventListener("mouseup", function() {
+      moveLeft = false;
+    });
+    
+    document.getElementById("leftButton").addEventListener("mouseleave", function() {
+      moveLeft = false;
+    });
+    
+    document.getElementById("rightButton").addEventListener("mousedown", function() {
+      moveRight = true;
+    });
+    
+    document.getElementById("rightButton").addEventListener("mouseup", function() {
+      moveRight = false;
+    });
+    
+    document.getElementById("rightButton").addEventListener("mouseleave", function() {
+      moveRight = false;
+    });
+    
+    // Klavye kontrolleri
+    window.addEventListener("keydown", function(e) {
+      if (e.key === "ArrowLeft") {
+        moveLeft = true;
+      } else if (e.key === "ArrowRight") {
+        moveRight = true;
+      }
+    });
+    
+    window.addEventListener("keyup", function(e) {
+      if (e.key === "ArrowLeft") {
+        moveLeft = false;
+      } else if (e.key === "ArrowRight") {
+        moveRight = false;
+      }
+    });
+    
+    // Oyunu yeniden başlat butonu
+    restartButton.addEventListener("click", function() {
+      initGame();
+    });
+    
+    // Sayfa yüklendiğinde oyunu başlat
+    window.onload = function() {
+      initGame();
+      gameLoop();
+    };
   </script>
 </body>
 </html>
