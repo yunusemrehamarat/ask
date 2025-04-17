@@ -64,35 +64,49 @@
       top: calc(60% + 40px); /* Daha küçük ekranlar için ayar */
     }
   }
-    
     .controls {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      padding: 1vw;
-      z-index: 10;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Butonları ortada topluyoruz */
+    gap: 10px; /* Butonlar arası boşluğu azaltıyoruz (eski değer 20px civarıydı) */
+    padding: 2vw;
+    z-index: 10; 
     }
-    
+.control-btn {
+    width: 16vw; /* Biraz daha küçük */
+    height: 16vw;
+    max-width: 70px;
+    max-height: 70px;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7vw;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    pointer-events: auto;
+    margin: 0; /* Margin'i sıfırlıyoruz */
+  }
+  
+  /* Ekstra küçük ekranlar için ayar */
+  @media (max-width: 400px) {
+    .controls {
+      gap: 5px; /* Çok küçük ekranlarda daha da yakın */
+    }
     .control-btn {
-      width: 20vw;
-      height: 20vw;
-      max-width: 40px;
-      max-height: 40px;
-      background-color: rgba(0,0,0,0.5);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 14vw;
+      height: 14vw;
       font-size: 6vw;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-      pointer-events: auto;
     }
+  }
+      
+    
     
     #gameOver {
       position: absolute;
