@@ -149,7 +149,7 @@
       }
     }
 
-    // Zemin ve kalp çizme
+    // Zeminleri çizme
     function drawPlatforms() {
       platforms.forEach((platform) => {
         ctx.fillStyle = "green";
@@ -157,6 +157,7 @@
       });
     }
 
+    // Kalpleri çizme
     function drawHearts() {
       hearts.forEach((heart) => {
         if (!heart.collected) {
