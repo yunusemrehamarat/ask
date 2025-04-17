@@ -18,7 +18,6 @@
       width: 100%;
       height: 100%;
     }
-    /* Butonlar için stil */
     .controlButton {
       position: absolute;
       bottom: 20px;
@@ -48,7 +47,6 @@
   <div id="leftButton" class="controlButton">←</div>
   <div id="rightButton" class="controlButton">→</div>
 
-  <!-- Yüz resimleri -->
   <img id="face1" src="https://i.hizliresim.com/r6bm8a9.png" style="display: none;">
   <img id="face2" src="https://i.hizliresim.com/37shbzf.png" style="display: none;">
 
@@ -60,9 +58,8 @@
     let lives = 3;
     let gravity = 0.5;
     let jumpStrength = 12;
-    let offsetY = 0; // Ekran kayma miktarı
+    let offsetY = 0;
 
-    // Karakter özellikleri
     const character1 = {
       x: canvas.width / 2 - 60,
       y: canvas.height - 150 - offsetY,
@@ -85,19 +82,23 @@
       grounded: false
     };
 
-    // Platformlar ve kalpler
     let platforms = [];
     let hearts = [];
 
-    // Canvas boyutlarını ayarla
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      
+      // Karakterlerin başlangıç pozisyonlarını yeniden ayarlama
+      character1.x = canvas.width / 2 - 60;
+      character1.y = canvas.height - 150 - offsetY;
+      character2.x = canvas.width / 2 + 20;
+      character2.y = canvas.height - 150 - offsetY;
     }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas(); // Başlangıçta canvas boyutunu ayarla
 
-    // Zıplama butonuna tıklama
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
     document.getElementById("jumpButton").addEventListener("click", () => {
       if (character1.grounded) {
         character1.velY = -jumpStrength;
@@ -109,10 +110,8 @@
       }
     });
 
-    // Sol ve sağ hareket butonlarına tıklama
     let moveLeft = false;
     let moveRight = false;
-
     let leftButtonActive = false;
     let rightButtonActive = false;
 
@@ -130,7 +129,6 @@
       }
     });
 
-    // Butonları bıraktığında hareketsizlik
     document.getElementById("leftButton").addEventListener("mouseup", () => {
       moveLeft = false;
       leftButtonActive = false;
@@ -141,7 +139,6 @@
       rightButtonActive = false;
     });
 
-    // Platform oluşturma
     function createPlatform(yPosition) {
       const platform = {
         x: Math.random() * (canvas.width - 150),
@@ -152,7 +149,6 @@
       platforms.push(platform);
     }
 
-    // Kalp oluşturma
     function createHeart(yPosition) {
       const heart = {
         x: Math.random() * (canvas.width - 40),
@@ -162,7 +158,6 @@
       hearts.push(heart);
     }
 
-    // Yeni platform ve kalp ekleme
     function updatePlatformsAndHearts() {
       if (Math.random() < 0.02) {
         createPlatform(-20);
@@ -170,7 +165,6 @@
       }
     }
 
-    // Zeminleri çizme
     function drawPlatforms() {
       platforms.forEach((platform) => {
         ctx.fillStyle = "green";
@@ -178,7 +172,6 @@
       });
     }
 
-    // Kalpleri çizme
     function drawHearts() {
       hearts.forEach((heart) => {
         if (!heart.collected) {
@@ -194,13 +187,11 @@
       });
     }
 
-    // Karakterleri çizme
     function drawCharacter() {
       ctx.fillStyle = "blue";
       ctx.fillRect(character1.x, character1.y - offsetY, character1.width, character1.height);
       ctx.fillRect(character2.x, character2.y - offsetY, character2.width, character2.height);
 
-      // Yüzleri çizme
       const face1 = document.getElementById("face1");
       const face2 = document.getElementById("face2");
 
@@ -208,7 +199,6 @@
       ctx.drawImage(face2, character2.x, character2.y - offsetY - 20, character2.width, character2.height);
     }
 
-    // Yükseklik sınırı ve yerçekimi
     function updateCharacter() {
       character1.velY += gravity;
       character2.velY += gravity;
@@ -219,21 +209,11 @@
       character1.x += character1.velX;
       character2.x += character2.velX;
 
-      // Sol sınır kontrolü
-      if (character1.x < 0) {
-        character1.x = 0;
-      }
-      if (character2.x < 0) {
-        character2.x = 0;
-      }
+      if (character1.x < 0) character1.x = 0;
+      if (character2.x < 0) character2.x = 0;
 
-      // Sağ sınır kontrolü
-      if (character1.x + character1.width > canvas.width) {
-        character1.x = canvas.width - character1.width;
-      }
-      if (character2.x + character2.width > canvas.width) {
-        character2.x = canvas.width - character2.width;
-      }
+      if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
+      if (character2.x + character2.width > canvas.width) character2.x = canvas.width - character2.width;
 
       if (character1.y + character1.height > canvas.height) {
         character1.y = canvas.height - character1.height;
@@ -248,30 +228,19 @@
       }
 
       platforms.forEach((platform) => {
-        if (
-          character1.x + character1.width > platform.x &&
-          character1.x < platform.x + platform.width &&
-          character1.y + character1.height <= platform.y &&
-          character1.y + character1.height + character1.velY >= platform.y
-        ) {
+        if (character1.x + character1.width > platform.x && character1.x < platform.x + platform.width && character1.y + character1.height <= platform.y && character1.y + character1.height + character1.velY >= platform.y) {
           character1.y = platform.y - character1.height;
           character1.velY = 0;
           character1.grounded = true;
         }
 
-        if (
-          character2.x + character2.width > platform.x &&
-          character2.x < platform.x + platform.width &&
-          character2.y + character2.height <= platform.y &&
-          character2.y + character2.height + character2.velY >= platform.y
-        ) {
+        if (character2.x + character2.width > platform.x && character2.x < platform.x + platform.width && character2.y + character2.height <= platform.y && character2.y + character2.height + character2.velY >= platform.y) {
           character2.y = platform.y - character2.height;
           character2.velY = 0;
           character2.grounded = true;
         }
       });
 
-      // Kalp toplayıp toplamadığını kontrol et
       hearts.forEach((heart) => {
         if (!heart.collected && character1.x + character1.width > heart.x && character1.x < heart.x + 40 && character1.y + character1.height > heart.y) {
           heart.collected = true;
@@ -284,7 +253,6 @@
       });
     }
 
-    // Platformları aşağıya kaydırma
     function movePlatforms() {
       platforms.forEach((platform) => {
         platform.y += 2;
@@ -293,11 +261,9 @@
         heart.y += 2;
       });
 
-      // Yeni platformlar ve kalpler ekleme
       updatePlatformsAndHearts();
     }
 
-    // Skor ve can göstergesi
     function drawUI() {
       ctx.fillStyle = "black";
       ctx.font = "24px Arial";
@@ -305,12 +271,10 @@
       ctx.fillText(`Canlar: ${lives}`, 30, 60);
     }
 
-    // Ekran kaydırma işlemi
     function moveScreenUp() {
       offsetY += 2;
     }
 
-    // Oyun döngüsü
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       updateCharacter();
