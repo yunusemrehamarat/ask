@@ -1,142 +1,276 @@
-<!-- ... HEAD ve BODY başı aynı kalıyor ... -->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kalp Toplama Oyunu</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    /* Butonlar için stil */
+    #jumpButton {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="jumpButton">↑</div>
 
-<!-- Görseller -->
-<img id="face1" src="https://i.hizliresim.com/r6bm8a9.png" style="display: none;">
-<img id="face2" src="https://i.hizliresim.com/37shbzf.png" style="display: none;">
+  <!-- Yüz resimleri -->
+  <img id="face1" src="https://i.hizliresim.com/r6bm8a9.png" style="display: none;">
+  <img id="face2" src="https://i.hizliresim.com/37shbzf.png" style="display: none;">
 
-<canvas id="gameCanvas"></canvas>
-<div id="leftButton">←</div>
-<div id="rightButton">→</div>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+    let score = 0;
+    let lives = 3;
+    let gravity = 0.5;
+    let jumpStrength = 12;
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+    // Karakter özellikleri
+    const character1 = {
+      x: canvas.width / 2 - 60,
+      y: canvas.height - 150,
+      width: 40,
+      height: 40,
+      velX: 0,
+      velY: 0,
+      speed: 5,
+      grounded: false
+    };
 
-let score = 0, timeLeft = 60, scrollSpeed = 2;
+    const character2 = {
+      x: canvas.width / 2 + 20,
+      y: canvas.height - 150,
+      width: 40,
+      height: 40,
+      velX: 0,
+      velY: 0,
+      speed: 5,
+      grounded: false
+    };
 
-const character = {
-  x: canvas.width / 2 - 20,
-  y: canvas.height / 2,
-  width: 40,
-  height: 40,
-  velX: 0,
-  speed: 5
-};
+    // Platformlar ve kalpler
+    let platforms = [];
+    let hearts = [];
 
-const face1 = new Image();
-face1.src = "https://i.hizliresim.com/r6bm8a9.png";
-const face2 = new Image();
-face2.src = "https://i.hizliresim.com/37shbzf.png";
+    // Canvas boyutlarını ayarla
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas(); // Başlangıçta canvas boyutunu ayarla
 
-const platforms = [], hearts = [];
+    // Zıplama butonuna tıklama
+    document.getElementById("jumpButton").addEventListener("click", () => {
+      if (character1.grounded) {
+        character1.velY = -jumpStrength;
+        character1.grounded = false;
+      }
+      if (character2.grounded) {
+        character2.velY = -jumpStrength;
+        character2.grounded = false;
+      }
+    });
 
-// Platform ve kalp oluştur
-for (let i = 0; i < 12; i++) {
-  const platformY = canvas.height - i * 150;
-  platforms.push({
-    x: Math.random() * (canvas.width - 100),
-    y: platformY,
-    width: 100,
-    height: 10
-  });
-  hearts.push({
-    x: Math.random() * (canvas.width - 30),
-    y: platformY - 40,
-    collected: false
-  });
-}
+    // Platform oluşturma
+    function createPlatform(yPosition) {
+      const platform = {
+        x: Math.random() * (canvas.width - 150),
+        y: yPosition,
+        width: 150,
+        height: 20
+      };
+      platforms.push(platform);
+    }
 
-function update() {
-  platforms.forEach(p => p.y += scrollSpeed);
-  hearts.forEach(h => h.y += scrollSpeed);
-
-  platforms.forEach((p, i) => {
-    if (p.y > canvas.height) {
-      p.y = -10;
-      p.x = Math.random() * (canvas.width - 100);
-      hearts[i] = {
-        x: p.x + 30,
-        y: p.y - 40,
+    // Kalp oluşturma
+    function createHeart(yPosition) {
+      const heart = {
+        x: Math.random() * (canvas.width - 40),
+        y: yPosition,
         collected: false
       };
+      hearts.push(heart);
     }
-  });
 
-  character.x += character.velX;
-  if (character.x < 0) character.x = 0;
-  if (character.x + character.width > canvas.width) character.x = canvas.width - character.width;
-
-  hearts.forEach(h => {
-    if (!h.collected &&
-        character.x < h.x + 20 &&
-        character.x + character.width > h.x &&
-        character.y < h.y + 20 &&
-        character.y + character.height > h.y) {
-      h.collected = true;
-      score++;
+    // Yeni platform ve kalp ekleme
+    function updatePlatformsAndHearts() {
+      if (Math.random() < 0.02) {
+        createPlatform(-20);
+        createHeart(-20);
+      }
     }
-  });
-}
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "green";
-  platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
-
-  hearts.forEach(h => {
-    if (!h.collected) {
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.arc(h.x, h.y, 10, 0, Math.PI * 2);
-      ctx.fill();
+    // Zemin ve kalp çizme
+    function drawPlatforms() {
+      platforms.forEach((platform) => {
+        ctx.fillStyle = "green";
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+      });
     }
-  });
 
-  // Karakterin görsellerini çiz
-  ctx.drawImage(face1, character.x, character.y - 5, character.width, character.height);
-  ctx.drawImage(face2, character.x + character.width, character.y - 5, character.width, character.height);
-
-  ctx.fillStyle = "black";
-  ctx.font = "20px Arial";
-  ctx.fillText(`Skor: ${score}`, 20, 30);
-  ctx.fillText(`Süre: ${timeLeft}`, 20, 60);
-}
-
-function gameLoop() {
-  update();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
-
-// Tüm resimler yüklendiğinde oyunu başlat
-let imagesLoaded = 0;
-[face1, face2].forEach(img => {
-  img.onload = () => {
-    imagesLoaded++;
-    if (imagesLoaded === 2) {
-      gameLoop(); // Hepsi yüklendi, oyunu başlat
+    function drawHearts() {
+      hearts.forEach((heart) => {
+        if (!heart.collected) {
+          ctx.fillStyle = "red";
+          ctx.beginPath();
+          ctx.moveTo(heart.x, heart.y);
+          ctx.bezierCurveTo(heart.x, heart.y - 10, heart.x - 10, heart.y - 10, heart.x - 10, heart.y + 5);
+          ctx.bezierCurveTo(heart.x - 10, heart.y + 15, heart.x, heart.y + 20, heart.x, heart.y + 25);
+          ctx.bezierCurveTo(heart.x, heart.y + 20, heart.x + 10, heart.y + 15, heart.x + 10, heart.y + 5);
+          ctx.bezierCurveTo(heart.x + 10, heart.y - 10, heart.x, heart.y - 10, heart.x, heart.y);
+          ctx.fill();
+        }
+      });
     }
-  };
-});
 
-// Zaman sayacı
-setInterval(() => {
-  timeLeft--;
-  if (timeLeft <= 0) {
-    alert("Süre doldu! Skor: " + score);
-    location.reload();
-  }
-}, 1000);
+    // Karakterleri çizme
+    function drawCharacter() {
+      ctx.fillStyle = "blue";
+      ctx.fillRect(character1.x, character1.y, character1.width, character1.height);
+      ctx.fillRect(character2.x, character2.y, character2.width, character2.height);
 
-// Mobil kontrol
-document.getElementById("leftButton").addEventListener("touchstart", () => character.velX = -character.speed);
-document.getElementById("rightButton").addEventListener("touchstart", () => character.velX = character.speed);
-document.getElementById("leftButton").addEventListener("touchend", () => character.velX = 0);
-document.getElementById("rightButton").addEventListener("touchend", () => character.velX = 0);
-</script>
+      // Yüzleri çizme
+      const face1 = document.getElementById("face1");
+      const face2 = document.getElementById("face2");
+
+      ctx.drawImage(face1, character1.x, character1.y - 20, character1.width, character1.height);
+      ctx.drawImage(face2, character2.x, character2.y - 20, character2.width, character2.height);
+    }
+
+    // Yükseklik sınırı ve yerçekimi
+    function updateCharacter() {
+      character1.velY += gravity;
+      character2.velY += gravity;
+
+      character1.y += character1.velY;
+      character2.y += character2.velY;
+
+      character1.x += character1.velX;
+      character2.x += character2.velX;
+
+      if (character1.y + character1.height > canvas.height) {
+        character1.y = canvas.height - character1.height;
+        character1.grounded = true;
+        character1.velY = 0;
+      }
+
+      if (character2.y + character2.height > canvas.height) {
+        character2.y = canvas.height - character2.height;
+        character2.grounded = true;
+        character2.velY = 0;
+      }
+
+      platforms.forEach((platform) => {
+        if (
+          character1.x + character1.width > platform.x &&
+          character1.x < platform.x + platform.width &&
+          character1.y + character1.height <= platform.y &&
+          character1.y + character1.height + character1.velY >= platform.y
+        ) {
+          character1.y = platform.y - character1.height;
+          character1.velY = 0;
+          character1.grounded = true;
+        }
+
+        if (
+          character2.x + character2.width > platform.x &&
+          character2.x < platform.x + platform.width &&
+          character2.y + character2.height <= platform.y &&
+          character2.y + character2.height + character2.velY >= platform.y
+        ) {
+          character2.y = platform.y - character2.height;
+          character2.velY = 0;
+          character2.grounded = true;
+        }
+      });
+
+      // Kalp toplayıp toplamadığını kontrol et
+      hearts.forEach((heart) => {
+        if (!heart.collected && character1.x + character1.width > heart.x && character1.x < heart.x + 40 && character1.y + character1.height > heart.y) {
+          heart.collected = true;
+          score++;
+        }
+        if (!heart.collected && character2.x + character2.width > heart.x && character2.x < heart.x + 40 && character2.y + character2.height > heart.y) {
+          heart.collected = true;
+          score++;
+        }
+      });
+    }
+
+    // Platformları aşağıya kaydırma
+    function movePlatforms() {
+      platforms.forEach((platform) => {
+        platform.y += 2;
+      });
+      hearts.forEach((heart) => {
+        heart.y += 2;
+      });
+
+      // Yeni platformlar ve kalpler ekleme
+      updatePlatformsAndHearts();
+    }
+
+    // Skor ve can göstergesi
+    function drawUI() {
+      ctx.fillStyle = "black";
+      ctx.font = "24px Arial";
+      ctx.fillText(`Skor: ${score}`, 30, 30);
+      ctx.fillText(`Canlar: ${lives}`, 30, 60);
+    }
+
+    // Oyun döngüsü
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updateCharacter();
+      movePlatforms();
+      drawCharacter();
+      drawPlatforms();
+      drawHearts();
+      drawUI();
+
+      if (character1.y > canvas.height || character2.y > canvas.height) {
+        lives--;
+        if (lives <= 0) {
+          alert("Game Over!");
+          location.reload();
+        } else {
+          character1.y = canvas.height - 150;
+          character1.velY = 0;
+          character2.y = canvas.height - 150;
+          character2.velY = 0;
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
 </body>
 </html>
