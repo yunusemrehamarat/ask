@@ -153,6 +153,16 @@
 
       character2.x = character1.x + character1.width;
       character2.y = character1.y;
+      hearts.forEach(h => {
+      if (!h.collected &&
+        character1.x < h.x + 20 &&
+        character1.x + character1.width > h.x &&
+        character1.y < h.y + 25 &&
+        character1.y + character1.height > h.y) {
+        h.collected = true;
+        score += h.type === 'strong' ? 2 : 1;
+  }
+});
     }
 
     function drawHeart(x, y, type) {
