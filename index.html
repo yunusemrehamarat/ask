@@ -42,7 +42,7 @@
     
     .game-info {
       position: absolute;
-      bottom: 10%;
+      bottom: 18%;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -235,8 +235,8 @@
       const totalWidth = screenWidth * 0.2; // İki karakterin toplam genişliği
       characters[0].x = screenWidth / 2 - totalWidth / 2;
       characters[1].x = characters[0].x + characters[0].width;
-      characters[0].y = screenHeight * 0.7;
-      characters[1].y = screenHeight * 0.7;
+      characters[0].y = screenHeight * 0.5;  // Karakteri biraz daha aşağıya yerleştir
+      characters[1].y = screenHeight * 0.5;  // Karakteri biraz daha aşağıya yerleştir
       
       // UI'ı güncelle
       timerEl.textContent = gameTime;
@@ -277,7 +277,7 @@
         const totalWidth = characters[0].width + characters[1].width;
         characters[0].x = Math.max(0, Math.min(screenWidth - totalWidth, characters[0].x));
         characters[1].x = characters[0].x + characters[0].width;
-        characters[0].y = screenHeight * 0.7 - characters[0].height / 2;
+        characters[0].y = screenHeight * 0.5 - characters[0].height / 2;
         characters[1].y = characters[0].y;
       }
     }
@@ -402,9 +402,8 @@
       hearts.forEach(heart => {
         ctx.beginPath();
         ctx.arc(heart.x, heart.y, heart.size, 0, Math.PI * 2);
-        ctx.fillStyle = "#FF6347";
+        ctx.fillStyle = '#f00';
         ctx.fill();
-        ctx.closePath();
       });
     }
     
