@@ -27,6 +27,10 @@
   </style>
 </head>
 <body>
+<!-- Karakter görselleri -->
+<img id="face1" src="https://i.hizliresim.com/r6bm8a9.png" style="display: none;">
+<img id="face2" src="https://i.hizliresim.com/37shbzf.png" style="display: none;">
+
 <canvas id="gameCanvas"></canvas>
 <div id="leftButton">←</div>
 <div id="rightButton">→</div>
@@ -39,7 +43,7 @@ let score = 0, timeLeft = 60, scrollSpeed = 2;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Karakter sabit bir yerde durur (alt ortada)
+// Karakter sabit ortada, yüzleri eklendi
 const character = {
   x: canvas.width / 2 - 20,
   y: canvas.height / 2,
@@ -48,6 +52,9 @@ const character = {
   velX: 0,
   speed: 5
 };
+
+const face1 = document.getElementById("face1");
+const face2 = document.getElementById("face2");
 
 const hearts = [];
 const platforms = [];
@@ -73,7 +80,7 @@ function update() {
   platforms.forEach(p => p.y += scrollSpeed);
   hearts.forEach(h => h.y += scrollSpeed);
 
-  // Yeniden döngüye sok
+  // Yukarıdan tekrar gelenler
   platforms.forEach((p, i) => {
     if (p.y > canvas.height) {
       p.y = -10;
@@ -89,11 +96,10 @@ function update() {
   // Karakter hareketi
   character.x += character.velX;
 
-  // Kenar sınırlaması
   if (character.x < 0) character.x = 0;
   if (character.x + character.width > canvas.width) character.x = canvas.width - character.width;
 
-  // Kalp toplama kontrolü
+  // Kalp toplama
   hearts.forEach(h => {
     if (!h.collected &&
         character.x < h.x + 20 &&
@@ -109,10 +115,6 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Karakter
-  ctx.fillStyle = "orange";
-  ctx.fillRect(character.x, character.y, character.width, character.height);
-
   // Platformlar
   ctx.fillStyle = "green";
   platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
@@ -126,6 +128,10 @@ function draw() {
       ctx.fill();
     }
   });
+
+  // Karakter görselleri
+  ctx.drawImage(face1, character.x, character.y - 5, character.width, character.height);
+  ctx.drawImage(face2, character.x + character.width, character.y - 5, character.width, character.height);
 
   // Skor ve zaman
   ctx.fillStyle = "black";
@@ -150,7 +156,7 @@ setInterval(() => {
   }
 }, 1000);
 
-// Dokunmatik kontroller
+// Dokunmatik
 document.getElementById("leftButton").addEventListener("touchstart", () => character.velX = -character.speed);
 document.getElementById("rightButton").addEventListener("touchstart", () => character.velX = character.speed);
 document.getElementById("leftButton").addEventListener("touchend", () => character.velX = 0);
