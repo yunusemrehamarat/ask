@@ -110,14 +110,15 @@
     });
 
     // Sol ve sağ hareket butonlarına tıklama
+    let moveLeft = false;
+    let moveRight = false;
+
     document.getElementById("leftButton").addEventListener("click", () => {
-      character1.velX = -character1.speed;
-      character2.velX = -character2.speed;
+      moveLeft = true;
     });
 
     document.getElementById("rightButton").addEventListener("click", () => {
-      character1.velX = character1.speed;
-      character2.velX = character2.speed;
+      moveRight = true;
     });
 
     // Platform oluşturma
@@ -197,6 +198,22 @@
 
       character1.x += character1.velX;
       character2.x += character2.velX;
+
+      // Sol sınır kontrolü
+      if (character1.x < 0) {
+        character1.x = 0;
+      }
+      if (character2.x < 0) {
+        character2.x = 0;
+      }
+
+      // Sağ sınır kontrolü
+      if (character1.x + character1.width > canvas.width) {
+        character1.x = canvas.width - character1.width;
+      }
+      if (character2.x + character2.width > canvas.width) {
+        character2.x = canvas.width - character2.width;
+      }
 
       if (character1.y + character1.height > canvas.height) {
         character1.y = canvas.height - character1.height;
@@ -282,6 +299,19 @@
       drawPlatforms();
       drawHearts();
       drawUI();
+
+      if (moveLeft) {
+        character1.velX = -character1.speed;
+        character2.velX = -character2.speed;
+        moveLeft = false;
+      } else if (moveRight) {
+        character1.velX = character1.speed;
+        character2.velX = character2.speed;
+        moveRight = false;
+      } else {
+        character1.velX = 0;
+        character2.velX = 0;
+      }
 
       if (character1.y > canvas.height || character2.y > canvas.height) {
         lives--;
