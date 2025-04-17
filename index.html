@@ -120,18 +120,27 @@
 
     function updateCharacters() {
       character1.velY += gravity;
+
       if (keys["a"] || keys["ArrowLeft"]) character1.velX -= 0.5;
       if (keys["d"] || keys["ArrowRight"]) character1.velX += 0.5;
       character1.velX *= 0.8;
-      character1.x += character1.velX; character1.y += character1.velY;
+      character1.x += character1.velX; 
+      character1.y += character1.velY;
 
-      character1.grounded = platforms.some(p => character1.x + character1.width > p.x && character1.x < p.x + p.width && character1.y + character1.height > p.y && character1.y + character1.height < p.y + p.height + character1.velY);
-      
-      if (character1.grounded) {
-        character1.y = platforms.find(p => character1.x + character1.width > p.x && character1.x < p.x + p.width).y - character1.height;
-        character1.velY = 0;
-      }
+      character1.grounded = false; // Reset grounded to false each frame
 
+      // Check for collisions with platforms and hearts
+      platforms.forEach(p => {
+        if (character1.x + character1.width > p.x && character1.x < p.x + p.width &&
+            character1.y + character1.height <= p.y && character1.y + character1.height + character1.velY >= p.y) {
+          // Collides with platform, landing on it
+          character1.y = p.y - character1.height;  // Move the character to the platform
+          character1.velY = 0;  // Stop vertical movement
+          character1.grounded = true; // Set the grounded flag to true
+        }
+      });
+
+      // Handle character boundaries
       if (character1.x < 0) character1.x = 0;
       if (character1.x + character1.width > canvas.width) character1.x = canvas.width - character1.width;
       if (character1.y + character1.height > canvas.height) {
