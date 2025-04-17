@@ -272,14 +272,17 @@
         char.height = characterHeight;
       });
       
-      // Karakterleri yeniden konumlandır
-      if (gameActive) {
-        const totalWidth = characters[0].width + characters[1].width;
-        characters[0].x = Math.max(0, Math.min(screenWidth - totalWidth, characters[0].x));
-        characters[1].x = characters[0].x + characters[0].width;
-        characters[0].y = screenHeight * 0.55 - characters[0].height / 2;
-        characters[1].y = characters[0].y;
-      }
+     if (gameActive) {
+    const totalWidth = characters[0].width + characters[1].width;
+    characters[0].x = Math.max(0, Math.min(screenWidth - totalWidth, characters[0].x));
+    characters[1].x = characters[0].x + characters[0].width;
+    characters[0].y = screenHeight * 0.6 - characters[0].height / 2;
+    characters[1].y = characters[0].y;
+    
+    // Skor panelini karakterlerin hemen altına yerleştir
+    const gameInfo = document.querySelector('.game-info');
+    gameInfo.style.top = `${characters[0].y + characters[0].height + 10}px`;
+  }
     }
     
     function setupControls() {
